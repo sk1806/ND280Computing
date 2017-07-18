@@ -1,0 +1,34 @@
+Disable calibration for all detectors except P0D
+as well as time offset and bar-end calibration
+
+        < oaCalib.RunTpcCalib     = 0 >  
+        < oaCalib.RunFgdCalib     = 0 >  
+        < oaCalib.RunEcalCalib    = 0 >     
+        < oaCalib.RunP0DCalib     = 1 >      
+        < oaCalib.RunSmrdCalib    = 0 >     
+        < oaCalib.RunIngridCalib  = 0 >   
+
+TFB Time calibration methods
+1 = include calibration method in chain
+0 = do not include method in the chain
+
+        < tfbApplyCalib.TriggerOffset = 1 >
+        < tfbApplyCalib.RMMSlipCorrection = 1 >
+        < tfbApplyCalib.ChannelAlignment = 0 >
+        < tfbApplyCalib.FEBAlignment = 0 >
+        < tfbApplyCalib.RMMAlignment = 0 >
+        < tfbApplyCalib.SCMAlignment = 0 >
+        < tfbApplyCalib.ElxTimewalkCalib = 1 >
+        < tfbApplyCalib.FiberTimewalkCalib = 1 >
+
+
+TFB Charge/Photon calibration methods
+1 = use dummy instead of DB constants 
+0 = use database constants (default)
+
+        < tfbApplyCalib.DummyPedestalCalib = 0 >
+        < tfbApplyCalib.DummyCIPolyCalib = 0 >
+        < tfbApplyCalib.DummyMPPCGainCalib = 0 >
+        < tfbApplyCalib.DummyMPPCLinCalib = 0 >
+        < tfbApplyCalib.DummyBarEndCalib = 1 >
+        < tfbApplyCalib.DummyFiberScaleCalib = 1 >

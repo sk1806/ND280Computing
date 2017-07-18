@@ -1,0 +1,7 @@
+Executable = "PackageReplace.py";
+Arguments = "-v v8r5 -p nd280Control";
+InputSandbox = {"../tools/*.py", "PackageReplace.py"};
+StdOutput = "PackageReplace.out";
+StdError = "PackageReplace.err";
+OutputSandbox = {"PackageReplace.out", "PackageReplace.err"};
+VirtualOrganisation = "t2k.org";

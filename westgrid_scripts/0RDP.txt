@@ -1,0 +1,84 @@
+RDP/FPP on Bugaboo
+==================
+
+An "operator" is supposed to work as "t2k" user in most cases below.
+
+
+0 Preparation, Misc.
+-------------------
+cd /global/scratch/t2k/vavilov/westgrid_scripts
+
+Cheat sheet, most commonly used commands: 
+exam_5fcomm.txt 
+
+Getting list of file to process:
+cd /home/vavilov/work/nd280/soffTasks/v1r32                 # Nick's latest (HEAD) code (NEUT Cluster)
+wget http://repo.nd280.org/nd280files/nd280DQ/nd280_subrun_info.sqlite
+app/mkrunlist -B  2014-10-26 2014-11-16 > 20141026_1115.lis # initial list of run/subruns
+
+work/run10xxx_spl_files_10828_000-10999_040.list - list of 10xxx raw files produced from a list above
+work/run11xxx_spl_files_11000_000-11036_015.list - list of 11xxx raw files
+
+BSD update:
+cd /home/t2k/t2k-software/work-v11r31/oaBeamData/v0r23/
+source cmt/setup.sh
+cd src
+./nd280-get-beam
+(Done. Something is wrong with the procedure. The whole DB got downloaded.
+I'm guessing that "wget" or "apache" response format changed slightely and
+./beam_summary/beam_last_loaded.index and beam_current.index were not
+comparable anymore)
+
+
+1 Copying raw files
+-------------------
+
+Should be done on BUGAGOO-FS
+
+./get_files_from_list.sh raw/ND280/ND280/00010000_00010999 /global/scratch/t2k 0 963 \
+  work/run10xxx_spl_files_10828_000-11000_040.list >& raw10.log &
+
+
+2 Creating/Filling Processing Status Web page
+---------------------------------------------
+See exam_5fcomm.txt above. E.g. to monitor new 10xxx runs no new page needed (6C fpp one already exists), 
+but the new list should be posted corresponding to new 10xxx run/subruns to process.
+
+
+3 Running ganga
+---------------
+cd /global/scratch/t2k/vavilov/ganga
+source setup.sh
+
+Example of "main" script used for tests:
+tskND280RDP_6Z-v11r31.gpi 
+can easily be adapted for running with Run 6 data (data destination and rollback dates are to be changed)
+
+The list of run/subruns to process, runsub_temp.list, has "run subrun" format, i.e. the  list file, 20141026_1115.list,
+mentioned in (0) can be used. 
+
+Assuming the name of the "main" script is tskND280RDP.gpi:
+ganga
+ganga> execfile("tskND280RDP.gpi")
+
+
+4 Uploading to T2KSRM/LFC
+-------------------------
+On bugaboo-fs:
+cd /global/scratch/t2k/vavilov/westgrid_scripts
+
+"Sandard" way:
+./put_files_from_list.sh anal production006/C/fpp/ND280/00010000_00010999 anal10.lis >& ~/copy_anal10.log &
+
+My way (on bugaboo-fs):
+emacs store_outs.sh # check/edit path in the header
+. store_outs.sh anal 6 [spl/cos] # automatically produces list, copies it to NEUT for registering later
+
+On neut:
+cd /home/vavilov/work/nd280/westgrid_scripts
+voms-proxy-init -voms t2k.org:/t2k.org/Role=production -valid 24:00
+emacs register_outs.sh # check/edit path in the header
+./register_outs.sh anal 6 
+
+
+

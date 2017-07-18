@@ -1,0 +1,558 @@
+#!/bin/bash
+# Script to download files from the grid and verify the local files
+# Author: enrico.scanta@cern.ch
+
+sourcing=$_ # this works only if placed here, at the very beginning
+
+# tcsh check
+echo 'This script does NOT work in tcsh!'
+if [[ "$sourcing" =~ "tcsh" ]] ; then
+  exit
+fi
+echo 'Ok, you are not in tcsh!'
+
+# sourcing check
+if [[ $sourcing != $0 ]] ; then
+  echo
+  echo 'This script needs to be executed, instead you are sourcing it (i.e. ". <scriptname>" or "source <scriptname>").'
+  echo 'Nevertheless sourcing it allows you to set your T2K proxy password in the current shell, once for all.'
+  echo 'Insert your T2K proxy password: '
+  read -s PASSW
+  export GRIDPWD=$PASSW # this keeps the pwd hidden (arguments are visble from any user with 'ps -eaf')
+  echo 'Password set. Now execute this script (i.e. ./<scriptname>)'
+  return
+fi
+
+#############################################################################################################
+# RUNNING MODE SETTINGS
+
+# MODE 1 - use command line arguments (hard to explain but very handy)
+# Execute the script passing just the local path to a local folder (as argument):
+# $./<this_script> <path_to_local_folder> <optional:string_to_filter_filenames>
+# The final part of this path needs to be identical on the grid
+# and all the non-existing folders will be recursively automatically created.
+# Set here a substring of your typical local path, after which the path is the same on the grid
+PREPATH_LOCAL="/t2k/production/" # no matter what there is before, the following part will be extracted
+# Set here the initial part of the grid path that will be attached at the extracted string (i.e. at the common part of the path)
+PREPATH_GRID="/grid/t2k.org/nd280/"
+# If there is the second optional argument, only the files containing that string will be downloaded.
+# A folder called 'job_<current_date-time>' will be created in ./ and will contain log files.
+
+
+# MODE 2 - use hard-coded paths
+# Execute the script with just argument '-h' to use the paths specified here below:
+if [ "$1$2$3" = "-h" ] ; then
+  # path in the grid: if empty it will be evaluated as in MODE 1 (with $PREPATH_LOCAL and $PREPATH_GRID):
+  GRIDPATH="/grid/t2k.org/nd280/production006/D/mcp/neut_5.3.2.2/2010-11-water/basket/run2/anal"
+  # local path where to download the files (non-existing folders will be created):
+  LOCALPATH="."
+  # download only files containing this string in the filename (empty for downloading all of them):
+  STRINGINFILENAME=""
+  # folder that will be created in ./ and will contain log files (if empty it will be 'job_<current_date-time>'):
+  JOBID=""
+fi
+
+
+# MODE 3 - background mode
+# You will be asked if you want to run in background as well with MODE 1 and 2,
+# but you can also send the job in background directly, executing this script with these arguments:
+# ./<this_script> '-bgmode' <job_ID> <local_path> <optional:grid_path> <optional:string_to_filter_filenames> 1>std_output_ID.txt 2>err_output_ID.txt &
+# where <job_ID> is a folder that will be created in ./ and will contain log files (if empty it will be 'job_<current_date-time>').
+# If the grid path is not passed it will be evaluated as in MODE 1 (with $PREPATH_LOCAL and $PREPATH_GRID).
+# Before sending the jobs you have to export your grid pwd with: export GRIDPWD=<your_grid_pwd>
+# (or start manually your grid credentials, but they will expire in 12 hours).
+
+
+#############################################################################################################
+# PROXY SETTINGS (files to be sourced)
+export ATLAS_LOCAL_ROOT_BASE="/cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase"
+LOCAL_SETUP_SH="${ATLAS_LOCAL_ROOT_BASE}/user/atlasLocalSetup.sh"
+GRID_SETUP_SH="/atlas/software/T2K/setup-grid-ui.sh"
+
+
+#############################################################################################################
+# EMAIL SETTINGS
+# you can receive an email when the download ends ('sendmail' need to be running on the system, check with 'ps -e | grep sendmail')
+ADDRESS="`whoami`@cern.ch" # whoami will put there your user name
+
+
+#############################################################################################################
+# FOR CLUSTERS WITH AUTHENTICATION TIME LIMIT
+if [ "$1$2$3" != "" ] ; then
+  echo
+  echo "############################################################################################################################"
+  echo "For CERN users: authentication (and this downloading) will end in 24 hours, to avoid this run 'k5reauth' before this script"
+  echo "############################################################################################################################"
+  echo
+fi
+#############################################################################################################
+
+# DEFAULT TIMEOUT FOR DOWNLOADING (if it fails, it keeps doubling it and retrying for one hour)
+TIMEOUTDEFAULT=20 # minutes
+
+# END SETTINGS
+
+
+# if no arguments passed, print out usage and exit
+if [ "$1$2$3" = "" ] ; then
+  SCRIPTNAME=$(basename $0)
+  echo
+  echo "Script to download files from the grid (and verify the local files)."
+  echo "Usage modes (further info in the commented lines at the beggining of this script):"
+  echo "MODE 1 - use command line arguments"
+  echo "  $SCRIPTNAME <path_to_local_folder> <optional:string_to_filter_filenames>"
+  echo "MODE 2 - use hard-coded paths (to be set in the script):"
+  echo "  $SCRIPTNAME -h"
+  echo "MODE 3 - background mode"
+  echo "  $SCRIPTNAME -bgmode <job_ID> <local_path> <optional:grid_path> <optional:string_to_filter_filenames> 1>std_output_ID.txt 2>err_output_ID.txt &"
+  echo "Utility: to set your T2K proxy password once and for all in the current shell, source this script instead of executing it"
+  echo "p.s.:argument and option order matters!"
+  exit
+fi
+
+ARGUMENTS="$1 $2 $3 $4 $5"
+# if first argument is '-bgmode', set up background mode
+if [ "$1" = "-bgmode" ] ; then
+  BKGMODE=1
+  echo "Executing in background mode: $0 $ARGUMENTS"
+  echo
+  JOBID=$2
+  shift 2 # shift arguments by 2 postitions
+fi
+
+
+# check if the second argument is the grid path or a string to filter the file list
+if [ "$1" != "-h" ] ; then
+  if [[ "$2" =~ "/grid/t2k.org" ]] ; then
+    GRIDPATH=$2
+    STRINGINFILENAME=$3
+  else
+    STRINGINFILENAME=$2
+  fi
+  LOCALPATH=$1
+fi
+
+
+# evaluate grid path (if not set)
+if [ "$GRIDPATH" = "" ] ; then
+  STRINGTOREPLACE=${LOCALPATH%%"$PREPATH_LOCAL"*} # get string before $PREPATH_LOCAL
+  STRINGTOREPLACE="$STRINGTOREPLACE$PREPATH_LOCAL" # get string up to $PREPATH_LOCAL
+  GRIDPATH="${LOCALPATH/$STRINGTOREPLACE/$PREPATH_GRID}" # get grid path via replacement
+fi
+
+
+# remove "/" at the end of the path
+LENGHT=${#LOCALPATH}
+if [ "${LOCALPATH:$LENGHT-1}" = "/" ] ; then  LOCALPATH=${LOCALPATH:0:$LENGHT-1} ; fi
+LENGHT=${#GRIDPATH}
+if [ "${GRIDPATH:$LENGHT-1}" = "/" ] ; then  GRIDPATH=${GRIDPATH:0:$LENGHT-1} ; fi
+
+
+# check paths consistency
+if [[ $LOCALPATH = *'\ '* ]] || [[ $LOCALPATH = *' '* ]] ; then
+  echo "LOCALPATH contains prohibited characters. Exit job"
+  exit
+fi
+if [[ $GRIDPATH = *'\ '* ]] || [[ $GRIDPATH = *' '* ]] ; then
+  echo "LOCALPATH contains prohibited characters. Exit job"
+  exit
+fi
+
+
+echo "Manual commands for connecting to the grid:"
+echo "source $LOCAL_SETUP_SH"
+echo "source $GRID_SETUP_SH"
+echo "voms-proxy-init -voms t2k.org"
+echo "lfc-ls /grid/t2k.org/nd280/production005/F/..."
+echo "(lfc-ls -l for details)"
+echo
+echo "You are going to download from: $GRIDPATH"
+echo "into: $LOCALPATH"
+if [ "$STRINGINFILENAME" != "" ] ; then
+  echo "only files containing '$STRINGINFILENAME'"
+fi
+echo
+
+
+# get the proxy pwd
+PASSW=$GRIDPWD # if the user exported the pwd, use it
+if [ "$PASSW" = "" ] ; then
+  echo "Insert your T2K proxy password: "
+  read -s PASSW
+else
+  echo "Using the exported T2K proxy password (if wrong do 'unset GRIDPWD')"
+fi
+
+
+#############################################################################################################
+# FUNCTION TO CREATE THE JOBID AND THE JOBID FOLDER
+function CREATEJOBID {
+  # Create a job ID (if it was not passed as argument, as for background mode)
+  if [ "$JOBID" = "" ] ; then
+    JOBID="job_`date +%F_%H-%M-%S`"
+    sleep 1 # to be sure having different IDs in case of a script sending many jobs
+  fi
+
+  # create the folder for this job
+  if [ ! -d $JOBID ] ; then
+    echo "Creating folder '$JOBID'"
+    mkdir $JOBID
+  else
+    echo "Folder $JOBID already exists (it will be used)"
+  fi
+  if [ ! -d $JOBID ] ; then
+    echo "Folder $JOBID cannot be created. Exit job"
+    exit
+  fi
+  return
+}
+
+#############################################################################################################
+# FUNCTION TO AUTOMATICALLY RENEW PROXY CREDENTIALS (expire in 12 hours)
+function RENEW_PROXY {
+  echo "Renewing proxy credentials"
+  source $LOCAL_SETUP_SH
+  source $GRID_SETUP_SH
+  echo $PASSW > .tmp
+  voms-proxy-init -voms t2k.org -pwstdin < .tmp
+  rm -f .tmp
+  TRENEWPROXY=`date +%s`
+  echo
+}
+
+#######  CHOOSE BACKGROUND MODE  #############################################################################
+if [[ $BKGMODE -ne 1 ]] ; then
+  echo
+  echo "Do you want to run in background mode? (y/n)"
+  CONFIRM="n"
+  read CONFIRM
+  if [ "$CONFIRM" = "yes" ] || [ "$CONFIRM" = "y" ]; then
+    CREATEJOBID # already needed to save stdout/stderr
+    export GRIDPWD=$PASSW # this keeps the pwd hidden (arguments are visble from any user with 'ps -eaf')
+    STDOUT=$JOBID/stdout.txt
+    STDERR=$JOBID/stderr.txt
+    echo "Standard output will be saved in $STDOUT"
+    echo "You can use 'tail -f $STDOUT' to see the output streaming."
+    $0 '-bgmode' $JOBID $LOCALPATH $GRIDPATH $STRINGINFILENAME 1>$STDOUT 2>$STDERR &
+    exit
+  fi
+fi
+
+
+
+# start proxy credentials
+RENEW_PROXY
+
+
+# download and save the file list
+echo -n "Downloading the list of files in the grid folder (it might take some minutes)... "
+FULLLIST="$(lfc-ls -l $GRIDPATH)"
+if [ "${FULLLIST}" = "" ] ; then
+  echo ; echo "No files found! Exit job."
+  exit
+fi
+# list to be saved after creating the missing folders
+echo "Done"
+
+################ LOOP OVER LOCAL FILES, LOOKING FOR BAD HASH IN THE FILENAME ###############
+if [ -d $LOCALPATH ] ; then
+  LOCALPATHLIST=`ls $LOCALPATH`
+  NLOCALFILES=`echo "$LOCALPATHLIST" | wc -l`
+  if [ $NLOCALFILES -gt 0 ] ; then
+    echo "There are already $NLOCALFILES files in the local path $LOCALPATH"
+    echo -n "Checking local files (there might be bad files -with wrong hash- if downloaded before the official announcement)"
+    BADFOLDER="notset"
+    CONFIRMMOVE=""
+    for FILENAME in `echo $LOCALPATHLIST` ; do
+      FOUND=`echo "${FULLLIST}" | grep $FILENAME | wc -l`
+      if [ "$FOUND" = "1" ] ; then continue ; fi
+      echo echo
+      echo "ERROR! THIS FILE IS NOT ON THE GRID LIST:"
+      echo "  $FILENAME"
+
+      if [[ $BKGMODE -eq 1 ]] ; then
+        echo "Since you are running in background mode, the job will be stopped."
+        exit
+      fi
+
+      if [ "$CONFIRMOVE" = "" ] ; then
+        echo "If this local folder contains files from several grid folders, you might want to skip this check. Skip? (y/n)"
+        CONFIRM=""
+        read CONFIRM
+        if [ "$CONFIRM" = "yes" ] || [ "$CONFIRM" = "y" ] ; then break ; fi
+      fi
+
+      if [ "$CONFIRMMOVE" = "" ] ; then
+        echo "Do you want to move this bad file (and the following ones) into another folder? (y/n)"
+        read CONFIRMMOVE
+      fi
+
+      if [ "$CONFIRMMOVE" != "yes" ] && [ "$CONFIRMMOVE" != "y" ] ; then continue ; fi
+
+      if [ ! -d $BADFOLDER ] ; then
+        echo "Do you want to use this suggested folder? (y/n)"
+        LENGHT=${#LOCALPATH}
+        if [ "${LOCALPATH:$LENGHT-1}" = "/" ] ; then  LOCALPATH=${LOCALPATH:0:$LENGHT-1} ; fi
+        echo "${LOCALPATH}_bad"
+        CONFIRM="n"
+        read CONFIRM
+        if [ "$CONFIRM" = "yes" ] || [ "$CONFIRM" = "y" ] ; then
+          BADFOLDER="${LOCALPATH}_bad"
+        else
+          echo "Type the path to a folder (existing or to be created):"
+          read BADFOLDER
+        fi
+        if [ ! -d $BADFOLDER ] ; then
+          mkdir $BADFOLDER
+          echo "'$BADFOLDER' created!"
+          if [ ! -d $BADFOLDER ] ; then
+            echo "ERROR: $BADFOLDER CANNOT BE CREATED!"
+            exit
+          fi
+        fi
+      fi
+
+      if [ -d $BADFOLDER ] ; then
+        echo "mv $LOCALPATH/$FILENAME $BADFOLDER"
+        mv -v $LOCALPATH/$FILENAME $BADFOLDER
+      fi
+
+    done
+  fi # end if NLOCALPATH
+fi # end if LOCALPATH exist
+echo "... done"
+
+
+################ VERIFY THE FILE LIST AND CREATE A FILTERED LIST OF FILES TO BE DOWNLOADED ######
+echo -n "Verifying the list of files to download"
+
+TMPLIST=$FULLLIST
+
+# filter by STRINGINFILENAME
+if [ "${STRINGINFILENAME}" != "" ] ; then
+  TMPLIST=`echo "${TMPLIST}" | grep $STRINGINFILENAME`
+fi
+
+# check that there are not a symlinks
+# (for example there are symlinks between 5E and 5F productions used for comparison)
+GRIDSIMLINKS=`echo "${TMPLIST}" | grep '^l'`
+if [ "$GRIDSIMLINKS" != "" ] ; then
+  echo
+  echo "WARNING: there are these symlinks in the list (they will be skipped):"
+  echo "$GRIDSIMLINKS"
+fi
+
+# check that it's not a folder
+GRIDFOLDERS=`echo "${TMPLIST}" | grep '^d'`
+if [ "$GRIDFOLDERS" != "" ] ; then
+  echo
+  echo "WARNING: there are these folders in the list (they will be skipped):"
+  echo "$GRIDFOLDERS"
+fi
+
+# remove eventual symlinks and folders from the list
+TMPLIST=`echo "${TMPLIST}" | grep -v '^l' | grep -v '^d'`
+# remove blank lines and spaces
+TMPLIST=`echo "${TMPLIST}" | grep -v '^$' | grep -v '^ '`
+
+if [ "${TMPLIST}" = "" ] ; then
+  echo
+  echo "The list of file to download is empty!"
+  exit
+fi
+
+echo "... done"
+
+
+################ CREATE MISSING FOLDERS
+if [ "${LOCALPATH:0:1}" != "/" ] && [ "${LOCALPATH:0:1}" != "." ] ; then
+  NEWDIR="."
+fi
+ARR=$(echo $LOCALPATH | tr "/" "\n")
+for WORD in $ARR ; do
+  NEWDIR="$NEWDIR/$WORD"
+  if [ ! -d $NEWDIR ] ; then
+    echo "Creating $NEWDIR"
+    mkdir $NEWDIR
+  fi
+  if [ ! -d $NEWDIR ] ; then echo "$NEWDIR cannot be created. Exit job" ; exit ; fi
+done
+
+
+################ SAVE FULL LIST with and w/o sizes (after creating missing folders!)
+echo "${FULLLIST}" > ${LOCALPATH}_on_grid.detailed_list
+FULLLIST="$(lfc-ls $GRIDPATH)"
+echo "${FULLLIST}" > ${LOCALPATH}_on_grid.list
+
+
+################ CREATE JOB
+
+# create the job ID and its folder
+CREATEJOBID
+
+SUMMARYFILE=$JOBID/summary.txt
+ERRORFILE=$JOBID/errors.txt
+FILTEREDLIST=$JOBID/filestodownload.txt
+echo "Downloading into: $LOCALPATH/"
+echo "            from: $GRIDPATH/"
+echo "The list of files to download will be saved in $FILTEREDLIST"
+echo "A summary of the job will be saved in $SUMMARYFILE"
+echo "Errors will be saved in $ERRORFILE"
+
+echo >> $SUMMARYFILE
+echo "Job ID: $JOBID" >> $SUMMARYFILE
+echo "Executing: $0 $ARGUMENTS" >> $SUMMARYFILE
+echo "${TMPLIST}" > $FILTEREDLIST
+NFILES=`less $FILTEREDLIST | wc -l`
+if [ "$STRINGINFILENAME" != "" ] ; then
+  echo "Files to be downloaded: $NFILES (only files containing: $STRINGINFILENAME)" >> $SUMMARYFILE
+else
+  echo "Files to be downloaded: $NFILES (all the files in the folder)" >> $SUMMARYFILE
+fi
+echo "From: $GRIDPATH/" >> $SUMMARYFILE
+echo "Into: $LOCALPATH/" >> $SUMMARYFILE
+echo "Start: `date +%F_%H-%M-%S`" >> $SUMMARYFILE
+
+
+################ LOOP OVER GRID FILES AND DOWNLOAD ###############
+echo
+echo "Starting downloading"
+
+IFILE=0
+IDOWNLOAD=0
+TIMEDOWNLOADMAX=0
+TIMEDOWNLOADTOT=0
+TIMEDOWNLOADMEAN=0
+TO=$(($TIMEOUTDEFAULT*60)) # convert in seconds
+while read LINEA ; do
+
+    # renew credentials each 10 hours (expire in 12 hours // 1 hour trying the download)
+    TIMENOW=`date +%s`
+    if [ $(($TIMENOW-$TRENEWPROXY)) -gt 36000 ] ; then
+      RENEW_PROXY
+    fi
+
+    set -- $LINEA
+    GRIDSIZE=$5
+    FILENAME=$9
+    FILETYPE=$1
+#    echo $FILENAME
+
+    # check that it's not a folder (better do it again, otherwise it could detect a wrong size and delete the folder)
+    if [ "${FILETYPE:0:1}" = "d" ] ; then
+      echo >> $ERRORFILE
+      echo "WARNING: this is a folder, it should have been skipped! `date`" >> $ERRORFILE
+      echo "$LINEA" >> $ERRORFILE
+      echo "Something didn't work. Exit job" >> $ERRORFILE
+      tail -4 $ERRORFILE
+      exit
+    fi
+
+    let IFILE=$IFILE+1
+
+    # check if we already have this file with the correct size
+    FILEEXIST=`ls $LOCALPATH/$FILENAME 2>/dev/null | wc -l`
+    if [ "$FILEEXIST" != "0" ] ; then
+      set -- `ls -l $LOCALPATH/$FILENAME`
+      if [ "$5" = "$GRIDSIZE" ] ; then
+        echo "[$IFILE/$NFILES] $FILENAME already downloaded, size ok :)"
+        continue
+      else
+        echo "FOUND FILE WITH WRONG SIZE ($5 VS $GRIDSIZE)!" >> $ERRORFILE
+        echo "Removing and redownloading $LOCALPATH/$FILENAME `date`" >> $ERRORFILE
+        tail -2 $ERRORFILE
+        rm -vf $LOCALPATH/$FILENAME
+      fi
+    fi
+
+    # DOWNLOAD
+    let IDOWNLOAD=$IDOWNLOAD+1 #$(($a+$b)) # or `expr $a + $b`
+    echo "[$IFILE/$NFILES] Download n. $IDOWNLOAD: $FILENAME `date`..."
+
+    # TRY AND RETRY WITH INCREASING THE TIMEOUT UNITL IT'S DOWNLOADED
+    SLEEPDEFAULT=180 # seconds
+    TIMEMARK=`date +%s`
+    while : ; do # loop forever
+
+      # CHECK IF HUNG UP
+      TIMENOW=`date +%s`
+      let TIMEHUNGUP=$TIMENOW-$TIMEMARK
+      if [ $TIMEHUNGUP -gt 3600 ] ; then
+        break
+      fi
+
+      # DOWNLOAD
+      TIMESTART=`date +%s`
+      # for lcg-cp options see https://twiki.opensciencegrid.org/bin/view/ReleaseDocumentation/LcgUtilities
+      lcg-cp --connect-timeout $TO --sendreceive-timeout $TO --bdii-timeout $TO --srm-timeout $TO --vo t2k.org lfn:$GRIDPATH/$FILENAME $LOCALPATH/$FILENAME
+      TIMEDOWNLOAD=$((`date +%s`-$TIMESTART))
+
+      # IF NOT DOWNLOADED, CONTINUE
+      if [ ! -f $LOCALPATH/$FILENAME ] ; then
+        echo
+        echo "It seems a connection problem (here or there), sleep $(($SLEEPDEFAULT/60)) minutes and retry `date`" >> $ERRORFILE
+        tail -2 $ERRORFILE
+        sleep $SLEEPDEFAULT
+        SLEEPDEFAULT=$(($SLEEPDEFAULT*2)) # double sleep for the next loop
+        TO=$(($TO*2)) # double timeout for the next loop
+        echo "Trying again with doubled timeout ($(($TO/60)) minutes) `date`"
+        echo
+        continue
+      fi
+
+      # CHECK SIZE, IF WRONG DELETE IT
+      set -- `ls -l $LOCALPATH/$FILENAME`
+      if [ "$5" != "$GRIDSIZE" ] ; then
+        echo >> $ERRORFILE
+        echo "ERROR in $LOCALPATH/$FILENAME" >> $ERRORFILE
+        echo "FILE DOWNLOADED WITH A WRONG SIZE ($5 VS $GRIDSIZE)! `date`" >> $ERRORFILE
+        TO=$(($TO*2)) # double timeout for the next loop
+        echo "Download failed (after $TIMEDOWNLOAD seconds), removing it and retrying with doubled timeout ($TO s)... `date`" >> $ERRORFILE
+        tail -4 $ERRORFILE
+        echo >> $ERRORFILE
+        rm -vf $LOCALPATH/$FILENAME
+        continue
+      fi
+
+      # if all fine, exit the while
+      break
+
+    done
+
+    # IF NOT DOWNLOADED, EXIT
+    if [ ! -f $LOCALPATH/$FILENAME ] ; then
+      MAILTEXT="Your job '$JOBID' hung up for 1 hour and has been stopped. \nMaybe your cluster login is time limited?"
+      echo
+      echo -e $MAILTEXT
+      if [ "$ADDRESS" != "" ] ; then
+        echo -e "$MAILTEXT \n\nCheers\nAnonimous" | mail -s $JOBID $ADDRESS
+      fi
+      let IDOWNLOAD=$IDOWNLOAD-1
+      break;
+    fi
+
+    # EVALUATE MAX AND MEAN DOWNLOAD TIME
+    if [ $TIMEDOWNLOAD -gt $TIMEDOWNLOADMAX ] ; then TIMEDOWNLOADMAX=$TIMEDOWNLOAD ; fi
+    TIMEDOWNLOADTOT=$(($TIMEDOWNLOADTOT+$TIMEDOWNLOAD))
+    TIMEDOWNLOADMEAN=$(($TIMEDOWNLOADTOT/$IDOWNLOAD))
+    echo " --> downloaded, size ok :-) average downloading time $TIMEDOWNLOADMEAN s, max $TIMEDOWNLOADMAX s"
+
+done < $FILTEREDLIST
+
+
+echo "End: `date +%F_%H-%M-%S`" >> $SUMMARYFILE
+NLOCALFILES=`ls $LOCALPATH | grep $STRINGINFILENAME | wc -l`
+echo "Downloaded files: $IDOWNLOAD" >> $SUMMARYFILE
+echo "Max downloading time: $TIMEDOWNLOADMAX" >> $SUMMARYFILE
+echo "Average downloading time: $TIMEDOWNLOADMEAN" >> $SUMMARYFILE
+echo "Now locally there are $NLOCALFILES files over $NFILES listed in $FILTEREDLIST" >> $SUMMARYFILE
+echo >> $SUMMARYFILE
+
+cat $SUMMARYFILE
+
+if [ "$ADDRESS" != "" ] ; then
+  MAILTEXT=`cat $SUMMARYFILE`
+  echo -e "$MAILTEXT \n\nCheers\nAnonimous" | mail -s $JOBID $ADDRESS
+fi
+
+

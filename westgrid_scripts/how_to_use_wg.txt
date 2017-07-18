@@ -1,0 +1,148 @@
+Draft - March 5th 2012 - Renee Poutissou
+
+File: how_to_use_wg.txt - found in CVS westgrid_scripts repository
+
+How to use Westgrid Clusters for production processing
+!!! This assumes that someone else has installed the ND280 Offline Software version
+    that you need in /home/t2k/t2k-software
+
+1 - Bugaboo and Orcinus
+BUGABOO - Cluster located at SFU 
+ORCINUS - Cluster located at UBC
+An effort has been made to make the directory structures the same on both systems in the 
+"t2k" account. PLEASE CONTINUE THIS EFFORT
+Because of this common structure, the scripts are also common for BOTH clusters. 
+
+2 - Scripts for production processing
+a) These scripts are under CVS control in the T2KRepository/nd280Computing/westgrid_scripts module
+In the WG machines, import via anoncvs@repo.nd280.org
+Somewhere else, import under your own user name in order to commit changes later on. 
+  export CVSROOT=":ext:anoncvs@repo.nd280.org:/home/trt2kmgr/T2KRepository"
+  export CVS_RSH=ssh
+  cvs co -d westgrid_scripts nd280Computing/westgrid_scripts
+
+b) List of scripts
+check_mon_info.pl - checks the log files after execution of runND280; called by nd280_rdp_....pbs
+gen_qsub.pl - prepares and submits jobs to prcess a list of raw data files; keeps up to MAX JOBS on the queue.  
+get_files_from_list.sh - to download files FROM t2ksrm
+nd280_rdp_cosmic_all.pbs - the script executed by the batch job on COSMIC triggers
+nd280_rdp_raw_template.cfg - templage config file for runND280; used by nd280_rdp_....pbs
+nd280_rdp_raw_template_with_disable.cfg - a variation of the template config file
+nd280_rdp_spill_all.pbs  - the script executed by the batch job on SPILL triggers
+nd280_rdp_verify_all.pbs - the original script for the batch job
+post_status.py - submits the results of check_mon_info.pl to the Processing Status DB
+put_files_from_list.sh - to download files TO t2ksrm
+put_register_files.sh - to download files TO t2ksrm and register them in the LFC
+register_files.sh - to register files already downloaded to t2ksrm
+
+3 - Subdirectories
+
+raw_files - used to load the raw data files from t2ksrm to scratch space on WG cluster
+            contains list of raw data files and run/subrun  per run range or period
+            raw data files:  run40_files.list  run4xxx_spl_files.list run5xxx_spl_files.list  run6xxx_spl_files.list  run7xxx_spl_files.list
+            run/subrun: run40_runs.list  run4xxx_runs.list  run5xxx_runs.list  run6xxx_runs.list  run7xxx_runs.list
+            *** run40... is a special case. It contains new data taken in January - FULL CALIBRARION is still missing - SO NOT PROCESS YET
+
+work      - input files for gen_qsub.pl
+transfers - 
+
+4 - Methodology
+o Download raw data files in /global/scratch/t2k/raw/ND280/ND280/...
+  using the lists of files in subdirectories 
+  ALREADY DONE for 2010 and 2011 raw data in BUGABOO and ORCINUS
+
+o Prepare an area in HOME to hold the scripts for a particular processing phase
+  cd
+  cd production/production005/A/rdp/verify/v10r9p1/scripts
+  export CVSROOT=":ext:anoncvs@repo.nd280.org:/home/trt2kmgr/T2KRepository"
+  export CVS_RSH=ssh  
+  cvs co -d westgrid_scripts nd280Computing/westgrid_scripts
+  
+o Prepare list of files to process in subdirectory work/
+
+o If necessary, create page in Processing Status Database  
+  and load list of runs to process  (see example below)
+
+o Submit a bunch of jobs using script gen_qsub.pl 
+  Only jobs in the same run range can be submitted from one instance of gen_qsub.pl
+  Usually submit a list with a few files at first. Then submit ALL the files for one
+  given run range: ex 00006000_00006999 
+
+o Check results from Processing Status web page. Depending on the problem, make a new list
+  of files to resubmit; do this ONLY if the processing failed for a reason like running out
+  of resources and you have changed nd280_rdp_... 
+  In case of other failures, consult with Thomas and/or Renee before resubmitting. 
+
+o Make list of files ready to be transferred to t2ksrm in subdirectory transfers/
+  Use BUGABOO-FS for transfers - two possibilities: 
+  a)  - copy files to t2ksrm with script put_files_from_list.sh 
+      - register files that have been copied to t2ksrm either from bugaboo-fs or from your
+        own machine 
+  or
+  b) - copy AND register with script put_register_files.sh 
+       registering is rather slow - you can have a few parallel scripts going - 
+
+Example on how this was done for processing SPILLS with v10r9p1:
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Create process_status stuff
+xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+a) Create the new pages (this is good for all triggers in a run range - do not repeat for SPILL and COSMIC ) 
+ curl -k -H 'Accept: text/plain' -X PUT 'https://procstatupdater:2aT0n8Ra@neut00.triumf.ca/t2k/processing/status/production005/A/rdp/verify/v10r9p1/ND280/00007000_00007999'
+ curl -k -H 'Accept: text/plain' -X PUT 'https://procstatupdater:2aT0n8Ra@neut00.triumf.ca/t2k/processing/status/production005/A/rdp/verify/v10r9p1/ND280/00006000_00006999'
+ curl -k -H 'Accept: text/plain' -X PUT 'https://procstatupdater:2aT0n8Ra@neut00.triumf.ca/t2k/processing/status/production005/A/rdp/verify/v10r9p1/ND280/00004000_00004999'
+ curl -k -H 'Accept: text/plain' -X PUT 'https://procstatupdater:2aT0n8Ra@neut00.triumf.ca/t2k/processing/status/production005/A/rdp/verify/v10r9p1/ND280/00005000_00005999'
+
+b) Add list of runs to be processed for these pages (needs to be done for each type of triggers since the list of runs to be processed for SPILL or COSMIC will be different)
+curl --data-binary @run7xxx_runs.list -k -H 'Accept: text/plain' -X POST 'https://procstatupdater:2aT0n8Ra@neut00.triumf.ca/t2k/processing/status/production005/A/rdp/verify/v10r9p1/ND280/00007000_00007999?spill'
+curl --data-binary @run6xxx_runs.list -k -H 'Accept: text/plain' -X POST 'https://procstatupdater:2aT0n8Ra@neut00.triumf.ca/t2k/processing/status/production005/A/rdp/verify/v10r9p1/ND280/00006000_00006999?spill'
+curl --data-binary @run5xxx_runs.list -k -H 'Accept: text/plain' -X POST 'https://procstatupdater:2aT0n8Ra@neut00.triumf.ca/t2k/processing/status/production005/A/rdp/verify/v10r9p1/ND280/00005000_00005999?spill'
+curl --data-binary @run4xxx_runs.list -k -H 'Accept: text/plain' -X POST 'https://procstatupdater:2aT0n8Ra@neut00.triumf.ca/t2k/processing/status/production005/A/rdp/verify/v10r9p1/ND280/00004000_00004999?spill'
+
+Create the "script" directory and get scripts
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+cd $HOME
+mkdir -p production/production005/A/rdp/scripts (should really have created production/production005/A/rdp/verify/v10r9p1/scripts)
+                                                 will move the files later 
+
+Submit the runs
+xxxxxxxxxxxxxxxxx
+ `cd` to your script directory
+
+./gen_qsub.pl v10r9p1 nd280_rdp_spill_all.pbs SPILL production005/A/rdp/verify/v10r9p1/ND280  work/run7xxx_spl_files_a.list wg-bugaboo
+... 
+./gen_qsub.pl v10r9p1 nd280_rdp_spill_all.pbs SPILL production005/A/rdp/verify/v10r9p1/ND280  work/run7xxx_spl_files_e.list wg-bugaboo
+Since there was a problem with the "parameters" files, several runs failed and will need to be redone. 25% of the runs were fine. 
+
+Checked that problem with parameters files is fixed in the script nd280_rdp_...pbs
+
+./gen_qsub.pl v10r9p1 nd280_rdp_spill_all.pbs SPILL production005/A/rdp/verify/v10r9p1/ND280  work/run5xxx_spl_files.list wg-bugaboo
+Check PROCESSING STATUS - one file failed 
+
+
+./gen_qsub.pl v10r9p1 nd280_rdp_spill_all.pbs SPILL production005/A/rdp/verify/v10r9p1/ND280  work/run6xxx_spl_files.list wg-bugaboo
+
+Problem with the 6xxx range - stop gen_qsub - send info about problem to Thomas - problem is only at the oaAnalysis stage. 
+
+Continue with 4xxx range
+
+./gen_qsub.pl v10r9p1 nd280_rdp_spill_all.pbs SPILL production005/A/rdp/verify/v10r9p1/ND280  work/run4xxx_spl_files.list wg-bugaboo
+./gen_qsub.pl v10r9p1 nd280_rdp_spill_all.pbs SPILL production005/A/rdp/verify/v10r9p1/ND280  work/missing7xxx_spl_files.list wg-bugaboo
+
+In parallel, start transfers to t2ksrm 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+cd transfers/
+./put_files_from_list.sh anal production005/A/rdp/verify/v10r9p1/ND280/00007000_00007999 test_anal.list
+./put_files_from_list.sh anal production005/A/rdp/verify/v10r9p1/ND280/00007000_00007999 run7xxx_anal_a.list >& run7xxx_anal_a.log
+./put_files_from_list.sh reco production005/A/rdp/verify/v10r9p1/ND280/00007000_00007999 run7xxx_reco_a.list >& run7xxx_reco_a.log
+
+./put_files_from_list.sh anal production005/A/rdp/verify/v10r9p1/ND280/00005000_00005999 run5xxx_anal.list >& run5xxx_anal.log
+./put_files_from_list.sh reco production005/A/rdp/verify/v10r9p1/ND280/00005000_00005999 run5xxx_reco.list >& run5xxx_reco.log
+
+and register files
+./register_files.sh anal  production005/A/rdp/verify/v10r9p1/ND280/00007000_00007999 test_anal.list
+./register_files.sh anal  production005/A/rdp/verify/v10r9p1/ND280/00007000_00007999 run7xxx_anal_a.list >register_run7xxx_anal_a.log
+./register_files.sh reco  production005/A/rdp/verify/v10r9p1/ND280/00007000_00007999 run7xxx_reco_a.list >register_run7xxx_reco_a.log
+
+./register_files.sh anal  production005/A/rdp/verify/v10r9p1/ND280/00005000_00005999 run5xxx_anal.list >register_run5xxx_anal.log
+./register_files.sh reco  production005/A/rdp/verify/v10r9p1/ND280/00005000_00005999 run5xxx_reco.list >register_run5xxx_reco.log

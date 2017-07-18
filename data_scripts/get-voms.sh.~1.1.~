@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Set environment
+source /home/perkin/t2k/GRID/nd280Computing/data_scripts/cronGRID.sh
+
+echo "Refreshing credentials"
+
+# Destroy any existing voms credentials
+# voms-proxy-destroy -debug
+
+# Delegate a new short term proxy from the myproxy server with password
+myproxy-get-delegation -v -d -s $MYPROXY_SERVER_RAL -k renew --stdin_pass < ~/.glite/myproxy
+
+# Stamp the delegated credentials with voms attributes
+voms-proxy-init -voms t2k.org:/t2k.org/Role=production -valid 24:0 -noregen
+
+# Delegate the short term voms proxy to the FTS server(s)
+ glite-delegation-init -v -f -s $FTS_DELEGATION -e 840

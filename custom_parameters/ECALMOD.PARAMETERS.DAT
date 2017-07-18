@@ -1,0 +1,22 @@
+
+	Only run oaCalib for ECal (will speed up processing)
+
+	< oaCalib.RunTpcCalib     = 0 >  
+	< oaCalib.RunFgdCalib     = 0 >  
+	< oaCalib.RunEcalCalib    = 1 >     
+	< oaCalib.RunP0DCalib     = 0 >      
+	< oaCalib.RunSmrdCalib    = 0 >     
+	< oaCalib.RunIngridCalib  = 0 >   
+
+	Disable TFB offsets
+	
+	< tfbApplyCalib.FEBAlignment = 0 >        //1 for data
+	< tfbApplyCalib.RMMAlignment = 0 >        //1 for data
+
+	Disable bar-end equalisation
+	1 = use dummy instead of DB constants 
+	0 = use database constants (default)
+  
+	< tfbApplyCalib.DummyMPPCGainCalib = 0 >  
+	< tfbApplyCalib.DummyMPPCLinCalib  = 0 > 
+	< tfbApplyCalib.DummyBarEndCalib   = 1 >

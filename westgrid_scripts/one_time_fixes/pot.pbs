@@ -1,0 +1,10 @@
+#!/bin/bash
+#PBS -S /bin/bash 
+#PBS -l walltime=4:00:00
+#PBS -l mem=2000mb
+
+source ~/t2k-software/Run_At_Start_T2k_v11r19.sh
+source ~/t2k-software/tools/v1r49/ROOT/v5r34p09n01/cmt/setup.sh
+
+cd /global/scratch/t2k/vavilov/westgrid_scripts
+./get_pot_from_list.sh anal production006/A/rdp/verify/v11r19/ND280/00008000_00008999 anal8_7005tmp.list >& pot_7005.list

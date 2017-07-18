@@ -1,0 +1,7 @@
+#############Hello World#################
+Executable = "/bin/echo";
+Arguments = "Hello welcome to t2k.org ";
+StdOutput = "hello.out";
+StdError = "hello.err";
+OutputSandbox = {"hello.out","hello.err"};
+##########################################

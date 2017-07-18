@@ -1,0 +1,47 @@
+Quick reminder of what needs to be done for a production:
+Fanny Dufour (April 2012)
+
+Useful command to check directories:
+General:
+ lfc-ls /grid/t2k.org/nd280/production004/Z
+
+1) Create directories (with lcg-production role)
+For Data:
+python CreateDirs.py  -p 4Z -t rdp -s all -l 1 -f dummy.txt
+
+For MC:
+python CreateMCDirs.py  -p 4Z -t mcp -m genie -c basket -r 2010-02-water  -s all -l 1 -f dummy.txt
+
+
+2) Install software  (with lcg-admin role)
+
+TO FILL
+
+3) Run jobs  (with lcg-production role)
+
+(Make sure you have /Jobs dir in processing_scripts)
+(Submitting 100 jobs can take up to an hour, so using nohup in front of the python command can help)
+
+For spill data:
+python RunND280Process.py -e spill -f ../data_scripts/test.list -j Raw -v v9r11p11 -p 4Z -t rdp -u $USER -b 2011-10-29 
+
+For spill MC:
+python ./RunND280Process.py -e spill -j MC -v v10r11p3 -p 5A -t mcp -u $USER -g neut -q 1500 -a 2010-11-water -y magnet -w beamb -n <tag> -f <filelist>
+
+Need to add cosmics command
+Very similar, and need -q 1500 for data as well.
+
+4) Verify outputs
+These are just example, you'll need to change most of the parameters
+
+For Data:
+python GetJobStatus.py -e spl -o ../processing_scripts/Jobs/4Zrdp -v v9r11p11 -p 4Z -f test.list 
+python CompareRawProcessed.py -p 5A -t rdp -l anal -e spl -f <filelist>
+
+For MC:
+python GetMCJobStatus.py -e spl -o ../processing_scripts/Jobs/5Amcp -v v10r11p3 -p 5A -b 9021 -f <filelist>
+python CompareMCProcessed.py -p 5A -t mcp -l anal  -e spl -f <filelist> -b 9021 -m neut -r 2010-11-water -d magnet -c beamb
+
+5) Clean duplicates
+
+TO FILL

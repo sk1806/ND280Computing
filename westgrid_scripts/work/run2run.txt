@@ -1,0 +1,13 @@
+T2K to ND280 run translation table
+(from http://www.t2k.org/nd280/runco/data/quality/inforuns):
+
+    fr web		fr my proc lists		date
+1   4165_00-5115_09	same
+2   6462_11-7754_16	same
+3   8309_00-8753_19	same
+4   8983_16-9796_04	8995_00-9798_06
+5   10252_10-10521_13	10252_00-same
+6   10931-11687		10828_00-11475_65(*),11687_127  10-2014-06-2015
+
+(*) stop point for 6E (as of Dec 3, 2015)
+

@@ -1,0 +1,7 @@
+#!/bin/bash
+
+cd /home/ppd/stewartt/T2K/GRID/nd280Computing/data_scripts
+source ./cronGRID.sh
+export FTS_SERVICE=https://lcgfts3.gridpp.rl.ac.uk:8446
+
+./SyncDirs_FTSTEST.py -a lfn:/grid/t2k.org/test/Trevor20170707_FTS3_REST_Test/ -b srm://t2ksrm.nd280.org/nd280data/test/Trevor20170707_FTS3_REST_Test -f 1

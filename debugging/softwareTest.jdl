@@ -1,0 +1,11 @@
+#############Software Test################
+Executable = "sw.sh";
+Arguments = "";
+StdOutput = "sw.out";
+StdError = "sw.err";
+InputSandbox = {"sw.sh"};
+OutputSandbox = {"sw.out","sw.err"};
+PerusalFileEnable = true;
+PerusalTimeInterval = 60;
+###Requirements = Member("VO-t2k.org-ND280-v11r31",other.GlueHostApplicationSoftwareRunTimeEnvironment);
+##########################################

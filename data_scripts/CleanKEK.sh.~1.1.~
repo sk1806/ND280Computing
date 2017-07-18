@@ -1,0 +1,5 @@
+#!/bin/bash
+
+cd /home/perkin/t2k/GRID/nd280Computing/data_scripts
+source cronGRID.sh
+./CleanKEK.py "$1"

@@ -1,0 +1,9 @@
+#############Hello World#################
+Executable = "/bin/echo";
+Arguments = "Hello welcome to the Grid ";
+StdOutput = "hello.out";
+StdError = "hello.err";
+OutputSandbox = {"hello.out","hello.err"};
+VirtualOrganisation = "t2k.org";
+Requirements=Member("VO-t2k.org-ND280-v7r21p1",other.GlueHostApplicationSoftwareRunTimeEnvironment);
+#########################################

@@ -1,0 +1,172 @@
+#!/bin/bash
+#PBS -S /bin/bash 
+#PBS -l walltime=12:00:00
+#PBS -l mem=2000mb
+
+# Script for executing runND280  for a given run/ subrun file.
+# Special version for mcp respinC - only oaAnalysis stage.
+#
+# Input: environment variables must be set for
+#        INPUT_FILE
+#        DIR_PATH
+#        SOFTWARE_VERSION
+#        TRIGGER
+#        LOCATION
+#        SCRIPT_DIR
+#
+# Environment variables also should be set
+
+if [ -z "${PBS_O_HOST+xxx}" ]; then
+    thisNode=$HOSTNAME
+else
+    thisNode=$PBS_O_HOST
+fi
+echo "Starting job on node $thisNode at: `date`"
+
+software_version=$SOFTWARE_VERSION
+#______________________________________________________________________________
+#____________________*******************************___________________________
+# Setup paths for this production
+# The following could differ depending on the site. It is setup the same
+# on bugaboo and on orcinus
+
+code_setup=/home/t2k/t2k-software/Run_At_Start_T2k_${software_version}.sh
+code_location=/home/t2k/t2k-software/work-${software_version}/nd280Control/*/cmt
+scr_dir_prefix="/global/scratch/t2k"
+
+# The following are relative to the above and should be the same everywhere
+process_dir_prefix="${scr_dir_prefix}/${DIR_PATH}"
+script_dir=$SCRIPT_DIR
+
+#Extract other variables
+runn=$( echo $INPUT_FILE | cut -d "_" -f 2 )
+subrun=$( echo $INPUT_FILE | cut -d "_" -f 3 |cut -d "." -f 1)
+echo Run $runn, Subrun $subrun
+range=$( echo ${runn:0:5} )000_$( echo ${runn:0:5} )999
+input_file=${scr_dir_prefix}/raw/ND280/ND280/${range}/${INPUT_FILE}
+output_dir=$process_dir_prefix/$range
+processing_dir_path=$DIR_PATH/$range
+echo OUTPUT will go into $output_dir
+echo Processing PATH is $processing_dir_path
+if [ $TRIGGER = "SPILL" ] ;then
+    ofile_prefix="oa_nd_spl"
+else
+    ofile_prefix="oa_nd_cos"
+fi
+
+
+#______________________________________________________________________________
+#____________________*******************************___________________________
+# check existence of input file
+echo "Input file is $input_file"
+if [ !  -f $input_file ] ; then
+    echo "Missing input file; CANNOT CONTINUE "
+    echo "Job finished  at: `date`"
+    echo "No output files were generated" 
+    exit 1
+fi
+
+#------------------------------------------------------------------------- 
+#______________________________________________________________________________
+#____________________*******************************___________________________
+# Prepare the directories and the card file.
+
+#Make dir for cfg, logf, cata, anal, etc  if necessary
+$process_dir_prefix/
+test -d $output_dir/cfg || { mkdir -p $process_dir_prefix/jobOutput; echo "Created  directory $process_dir_prefix/jobOutput"; }
+test -d $output_dir/cfg || { mkdir -p $output_dir/cfg; echo "Created  directory $output_dir/cfg"; }
+test -d $output_dir/logf || { mkdir -p $output_dir/logf; echo "Created  directory $output_dir/logf"; } 
+test -d $output_dir/cata || { mkdir -p $output_dir/cata; echo "Created  directory $output_dir/cata"; }
+test -d $output_dir/cali || { mkdir -p $output_dir/cali; echo "Created  directory $output_dir/cali"; }
+test -d $output_dir/param || { mkdir -p $output_dir/param; echo "Created  directory $output_dir/param"; }
+test -d $output_dir/reco || { mkdir -p $output_dir/reco; echo "Created  directory $output_dir/reco"; }
+test -d $output_dir/anal || { mkdir -p $output_dir/anal; echo "Created  directory $output_dir/anal"; }
+test -d $output_dir/errors || { mkdir -p $output_dir/errors; echo "Created  directory $output_dir/errors"; }
+test -d $output_dir/jobOutput || { mkdir -p $output_dir/jobOutput; echo "Created  directory $output_dir/jobOutput"; }
+
+echo "Change directory to $output_dir"
+cd $output_dir
+
+cardfile=nd280_rdp_${runn}-${subrun}_${TRIGGER}.cfg
+template_file=$script_dir/nd280_rdp_raw_template.cfg
+echo "Template_file is $template_file"
+comment=${software_version}-${LOCATION}
+stage1=oaCalib
+stage2=oaRecon
+stage3=oaAnalysis
+
+cat ${template_file} | sed -e s!SOFTWARE_VERSION!${software_version}! | sed -e s!COMMENT!${comment}! \
+                     | sed -e s!STAGE1!${stage1}!  | sed -e s!STAGE2!${stage2}!  | sed -e s!STAGE3!${stage3}! \
+                     | sed -e s!MIDAS_FILE!${input_file}!  | sed -e s!EVENT_SELECT!${TRIGGER}! >${cardfile} 
+echo "Cardfile is $cardfile"
+more $cardfile
+
+#______________________________________________________________________________
+#____________________*******************************___________________________
+# Actually execute the ND280 software processing (oaCalib + oaRecon)
+
+echo source  $code_setup
+source $code_setup
+echo source  ${code_location}/setup.sh
+source ${code_location}/setup.sh
+
+#ulimit -v 2097152
+runND280 -c ${cardfile}
+#______________________________________________________________________________
+#____________________*******************************___________________________
+# Scan log file and send info to PROCESS MONITOR on neut00
+
+echo "  "
+logfile=$( ls ${ofile_prefix}_$runn-$subrun*_logf_*.log)
+if [ "$?" -ne "0" ] ; then
+    echo "Something wrong with logfile $logfile; CANNOT CONTINUE "
+    echo "Moving output files to the error directory"
+    mv $cardfile errors/
+    mv ${ofile_prefix}_$runn-$subrun*_logf_*.log  errors/
+    mv ${ofile_prefix}_$runn-$subrun*.root errors/
+    mv ${ofile_prefix}_$runn-$subrun*catalogue.dat errors/
+
+    echo "Job exits after error  at: `date`"
+    exit 1
+fi
+echo logfile is $logfile
+#Maybe TODO Copy logfile to NEUT cluster
+
+#Move the card and parameters.dat files to their own directories
+mv $cardfile cfg/
+
+paraminfo=$( grep "parameters.dat" $logfile)
+if [[ $paraminfo == *"par_override"* ]] ; then
+    paramfile=$( echo $paraminfo |awk -F= '{print $2}' |awk -F" " '{print $1}')
+    echo "parameters file is $paramfile"
+#    mv $paramfile param/
+fi
+
+#Check the contents of the log file for errors and update the Processing database
+#If the variable $processing_dir_path is omitted, there will be no updating of the Processing database
+
+echo Calling $script_dir/check_mon_info.pl $LOCATION $TRIGGER  $output_dir/$logfile $processing_dir_path
+$script_dir/check_mon_info.pl $LOCATION $TRIGGER $output_dir/$logfile $processing_dir_path
+if [ "$?" -ne "1" ]; then
+  echo "Script check_mon_script encoutered an error in the log file"
+  echo "Moving output files to the error directory"
+  mv ${ofile_prefix}_$runn-$subrun*_logf_*.log  errors/
+  mv ${ofile_prefix}_$runn-$subrun*.root errors/
+  mv ${ofile_prefix}_$runn-$subrun*catalogue.dat errors/
+
+  echo "Job exits after error at: `date`"
+  exit 1
+fi
+
+echo "  "
+#______________________________________________________________________________
+#____________________*******************************___________________________
+# Move output files to respective directories
+echo "Moving output files to their respective directories"
+mv ${ofile_prefix}_$runn-$subrun*_logf_*.log  logf/
+mv ${ofile_prefix}_$runn-$subrun*_cali_*.root cali/
+mv ${ofile_prefix}_$runn-$subrun*_reco_*.root reco/
+mv ${ofile_prefix}_$runn-$subrun*_anal_*.root anal/
+mv ${ofile_prefix}_$runn-$subrun*catalogue.dat cata/
+
+echo "Job finished successfully at  `date`" 

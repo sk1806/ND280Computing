@@ -1,0 +1,182 @@
+INSTALLING THE GLITE USER INTERFACE: (gLite-UI)
+Fanny Dufour (March 2012)
+
+-------------------------------------------------------------------------------
+PREAMBLE
+
+This is the kind of stuff where you'll need help from your local grid
+expert and from the T2K grid expert.  And the details of such
+installation change often so if the instructions don't work for you,
+please write a short note of what you had to do to make it
+work. (Don't erase this note because it might work for someone else).
+
+-------------------------------------------------------------------------------
+DOWNLOAD AND INFORMATION
+
+Follow instructions from:
+https://twiki.cern.ch/twiki/bin/view/LCG/UiTarInstall
+
+Ask someone with a working installation (Marat Jonathan, Fanny) for
+the site-info.def file and adapt it for your site. The Geneva copy is
+available later in this file.
+
+As of March 2012, be careful we are using a newer version of glite
+than the one presented in the twiki posted above. To get the new
+version go to: URL from :http://glite.cern.ch/glite-UI/
+
+Get current version of gilte-UI by doing : 
+ wget http://grid-deployment.web.cern.ch/grid-deployment/download/relocatable/glite-UI/SL5_x86_64//glite-UI-3.2.11-1.sl5.tar.gz
+
+and external package
+wget http://grid-deployment.web.cern.ch/grid-deployment/download/relocatable/glite-UI/SL5_x86_64//glite-UI-3.2.11-1.sl5-external.tar.gz
+
+
+-----------------------------------------------------------------------------
+COPY OF USEFUL FILES
+
+Copy of the Geneva site-info.def with a few comments:
+
+==================== BEGIN OF site-info.def (for Geneva) ========================
+
+# This should be changed to match your setup
+# Need to figure who handles your certificates, ask a grid expert at your site
+
+INSTALL_ROOT=/neutrino/data5/t2k/soft/gridconfig
+GLITE_EXTERNAL_ROOT=${INSTALL_ROOT}/external
+GRID_ENV_LOCATION=${GLITE_EXTERNAL_ROOT}/etc/profile.d
+FUNCTIONS_DIR=${INSTALL_ROOT}/glite/yaim/functions
+X509_CERT_DIR=/afs/cern.ch/project/gd/LCG-share2/certificates
+
+#=============== FROM YOUR GRID EXPERT ==============
+################################
+# Site configuration variables #
+################################
+
+# Human-readable name of your site
+SITE_NAME=UNIGE-DPNC
+
+# The contact e-mail of your site.
+# A coma separated list of email addresses. 
+#SITE_EMAIL="mail1[,mail2[,...]]"
+SITE_EMAIL="yann.meunier@unige.ch,szymon.gadomski@unige.ch"
+
+# It is the position of your site north or south of the equator 
+# measured from -90. to 90. with positive values going north and 
+# negative values going south. 
+SITE_LAT=46.1996 
+
+# It is the position of the site east or west of Greenwich, England 
+# measured from -180. to 180. with positive values going east and 
+# negative values going west.  
+SITE_LONG=6.1421
+
+# Site info to ptblish, Feb 2011
+SITE_OTHER_WLCG_TIER=3
+
+# Uncomment this variable if your site has an http proxy
+# in order to reduce the load on the CA host
+# SITE_HTTP_PROXY="http-proxy.my.domain"
+
+# Aded after yaim error (28/1/2010)
+SITE_DESC="University of Geneva, Department of Particle Physics"
+SITE_LOC="Geneva, Switzerland"
+SITE_WEB=http://atlasgrid.unige.ch
+SITE_SECURITY_EMAIL=$SITE_EMAIL
+SITE_SUPPORT_EMAIL=$SITE_EMAIL
+SITE_OTHER_GRID="NDGF|WLCG"
+#########
+
+# =============== COMMON FOR ALL T2K COLLABORATORS ===================
+BDII_HOST=lcg-bdii.cern.ch
+PX_HOST=myproxy.cern.ch
+VOS=t2k.org
+
+# This should also be defined properly in your .gilte/ directory
+
+VO_T2K_ORG_VOMSES="\
+'t2k.org voms.gridpp.ac.uk 15003 \
+/C=UK/O=eScience/OU=Manchester/L=HEP/CN=voms.gridpp.ac.uk \
+t2k.org 24' \
+"
+VO_T2K_ORG_VOMS_CA_DN="\
+'/C=UK/O=eScienceCA/OU=Authority/CN=UK e-Science CA' \
+"
+
+# all WMS that currently support the VO
+
+VO_T2K_ORG_WMS_HOSTS="
+    cg08.ific.uv.es
+    grinr05.inr.troitsk.ru
+    lcgwms03.gridpp.rl.ac.uk
+    wms01.grid.hep.ph.ic.ac.uk
+    wms01.ific.uv.es
+    wms013.cnaf.infn.it
+    wms02.grid.hep.ph.ic.ac.uk
+"
+
+# still need to define 1 explicitly...
+
+WMS_HOST=lcgwms03.gridpp.rl.ac.uk
+
+======================== END ==================================
+
+I am also adding a copy of the Geneva grid-env.sh file but this should
+be generated automatically when compile the glite user interface.
+
+===================== BEGIN  OF grid-env.sh ================================
+
+if [ "X${GLITE_ENV_SET+X}" = "X" ]; then
+. /neutrino/data5/t2k/soft/gridconfig/external/etc/profile.d/grid-env-funcs.sh
+gridpath_prepend     "PYTHONPATH" "/neutrino/data5/t2k/soft/gridconfig/lcg/lib64/python2.4/site-packages"
+gridpath_prepend     "PYTHONPATH" "/neutrino/data5/t2k/soft/gridconfig/lcg/lib64/python"
+gridpath_prepend     "PYTHONPATH" "/neutrino/data5/t2k/soft/gridconfig/glite/lib64/python2.4/site-packages"
+gridpath_prepend     "PYTHONPATH" "/neutrino/data5/t2k/soft/gridconfig/glite/lib64/python"
+gridpath_prepend     "PERL5LIB" "/neutrino/data5/t2k/soft/gridconfig/lcg/lib64/perl"
+gridpath_prepend     "PATH" "/neutrino/data5/t2k/soft/gridconfig/lcg/bin"
+gridpath_prepend     "PATH" "/neutrino/data5/t2k/soft/gridconfig/globus/bin"
+gridpath_prepend     "PATH" "/neutrino/data5/t2k/soft/gridconfig/glite/bin"
+gridpath_prepend     "PATH" "/neutrino/data5/t2k/soft/gridconfig/edg/bin"
+gridpath_prepend     "PATH" "/neutrino/data5/t2k/soft/gridconfig/d-cache/srm/bin:/neutrino/data5/t2k/soft/gridconfig/d-cache/dcap/bin"
+gridpath_prepend     "MANPATH" "/neutrino/data5/t2k/soft/gridconfig/lcg/share/man"
+gridpath_prepend     "MANPATH" "/neutrino/data5/t2k/soft/gridconfig/lcg/man"
+gridpath_prepend     "MANPATH" "/neutrino/data5/t2k/soft/gridconfig/globus/man"
+gridpath_prepend     "MANPATH" "/neutrino/data5/t2k/soft/gridconfig/glite/yaim/man"
+gridpath_prepend     "MANPATH" "/neutrino/data5/t2k/soft/gridconfig/glite/share/man"
+gridpath_prepend     "MANPATH" "/neutrino/data5/t2k/soft/gridconfig/edg/share/man"
+gridpath_prepend     "LD_LIBRARY_PATH" "/neutrino/data5/t2k/soft/gridconfig/lcg/lib64"
+gridpath_prepend     "LD_LIBRARY_PATH" "/neutrino/data5/t2k/soft/gridconfig/lcg/lib"
+gridpath_prepend     "LD_LIBRARY_PATH" "/neutrino/data5/t2k/soft/gridconfig/globus/lib"
+gridpath_prepend     "LD_LIBRARY_PATH" "/neutrino/data5/t2k/soft/gridconfig/glite/lib64"
+gridpath_prepend     "LD_LIBRARY_PATH" "/neutrino/data5/t2k/soft/gridconfig/glite/lib"
+gridpath_prepend     "LD_LIBRARY_PATH" "/neutrino/data5/t2k/soft/gridconfig/d-cache/dcap/lib64"
+gridpath_prepend     "LD_LIBRARY_PATH" "/neutrino/data5/t2k/soft/gridconfig/d-cache/dcap/lib"
+gridpath_append      "PYTHONPATH" "/neutrino/data5/t2k/soft/gridconfig/external/opt/fpconst/lib/python2.4/site-packages"
+gridpath_append      "PYTHONPATH" "/neutrino/data5/t2k/soft/gridconfig/external/opt/ZSI/lib/python2.4/site-packages"
+gridpath_append      "PERLLIB" "/neutrino/data5/t2k/soft/gridconfig/gpt/lib/perl"
+gridpath_append      "PERL5LIB" "/neutrino/data5/t2k/soft/gridconfig/gpt/lib/perl"
+gridpath_append      "PERL5LIB" "/neutrino/data5/t2k/soft/gridconfig/external/usr/lib/perl5/vendor_perl/5.8.8"
+gridpath_append      "LD_LIBRARY_PATH" "/neutrino/data5/t2k/soft/gridconfig/external/usr/lib64"
+gridpath_append      "LD_LIBRARY_PATH" "/neutrino/data5/t2k/soft/gridconfig/external/usr/lib"
+gridpath_append      "LD_LIBRARY_PATH" "/neutrino/data5/t2k/soft/gridconfig/classads/lib64/"
+gridenv_setind      "X509_USER_PROXY" "/tmp/x509up_u$(id -u)"
+gridenv_set         "X509_VOMS_DIR" "/neutrino/data5/t2k/soft/gridconfig/external/etc/grid-security/vomsdir/"
+gridenv_set         "X509_CERT_DIR" "/afs/cern.ch/project/gd/LCG-share2/certificates"
+gridenv_set         "SRM_PATH" "/neutrino/data5/t2k/soft/gridconfig/d-cache/srm"
+gridenv_set         "MYPROXY_SERVER" "myproxy.cern.ch"
+gridenv_set         "LCG_LOCATION" "/neutrino/data5/t2k/soft/gridconfig/lcg"
+gridenv_set         "LCG_GFAL_INFOSYS" "lcg-bdii.cern.ch:2170"
+gridenv_set         "GT_PROXY_MODE" "old"
+gridenv_set         "GRID_ENV_LOCATION" "/neutrino/data5/t2k/soft/gridconfig/external/etc/profile.d"
+gridenv_set         "GPT_LOCATION" "/neutrino/data5/t2k/soft/gridconfig/gpt"
+gridenv_set         "GLOBUS_TCP_PORT_RANGE" "20000,25000"
+gridenv_set         "GLOBUS_LOCATION" "/neutrino/data5/t2k/soft/gridconfig/globus"
+gridenv_set         "GLITE_WMS_LOCATION" "/neutrino/data5/t2k/soft/gridconfig/glite"
+gridenv_set         "GLITE_SD_SERVICES_XML" "/neutrino/data5/t2k/soft/gridconfig/glite/etc/services.xml"
+gridenv_set         "GLITE_SD_PLUGIN" "file,bdii"
+gridenv_set         "GLITE_LOCATION_VAR" "/neutrino/data5/t2k/soft/gridconfig/glite/var"
+gridenv_set         "GLITE_LOCATION" "/neutrino/data5/t2k/soft/gridconfig/glite"
+gridenv_set         "EDG_LOCATION" "/neutrino/data5/t2k/soft/gridconfig/edg"
+. /neutrino/data5/t2k/soft/gridconfig/external/etc/profile.d/clean-grid-env-funcs.sh
+fi
+
+========================= END =================================

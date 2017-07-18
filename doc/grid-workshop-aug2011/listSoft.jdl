@@ -1,0 +1,9 @@
+############# List Software Dir #################
+Executable = "/bin/ls";
+Arguments = " -R $VO_T2K_ORG_SW_DIR/ ";
+StdOutput = "list.out";
+StdError = "list.err";
+OutputSandbox = {"list.out","list.err"};
+VirtualOrganisation = "t2k.org";
+Requirements=Member("VO-t2k.org-ND280-v7r21p1",other.GlueHostApplicationSoftwareRunTimeEnvironment);
+#########################################

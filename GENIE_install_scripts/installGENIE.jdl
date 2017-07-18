@@ -1,0 +1,7 @@
+Executable = "installAllGENIE.py";
+Arguments = "-m Make.include -u UserPhysicsOptions.xml --version-genie 2.6.6 --version-libxml2 2.7.8 --version-lhapdf 5.8.6 --version-pythia6 6_425 --version-root 5.30.02 --overwrite";
+InputSandbox = {"installAllGENIE.py","pexpect.py","GENIE_Inst_Tools.py","Make.include", "UserPhysicsOptions.xml"};
+StdOutput = "installAllGENIE.out";
+StdError = "installAllGENIE.err";
+OutputSandbox = {"installAllGENIE.out", "installAllGENIE.err"};
+VirtualOrganisation = "t2k.org";

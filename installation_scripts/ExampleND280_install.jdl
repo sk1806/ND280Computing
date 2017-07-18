@@ -1,0 +1,8 @@
+Executable = "ND280Software.py";
+Arguments = "-v v7r19p9";
+InputSandbox = {"../tools/*.py"};
+StdOutput = "installND280.out";
+StdError = "installND280.err";
+OutputSandbox = {"installND280.out", "installND280.err"};
+MyProxyServer = "myproxy.gridpp.rl.ac.uk";
+VirtualOrganisation = "t2k.org";

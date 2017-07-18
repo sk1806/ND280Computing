@@ -1,0 +1,39 @@
+Example of commands used in 5F processing:
+
+o Getting the list of raw files:
+$ curl --compressed -sk --header 'Accept: text/plain' https://nd280member:k2kno50bai@nd280web.nd280.org/t2k/data/browse/data/nd280data/raw/ND280/ND280/00009000_00009999
+
+o Copying raw files to a scratch area
+$ ./get_files_from_list.sh raw/ND280/ND280/00009000_00009999 /global/scratch/t2k  2 390 work/run9xxx_spl_files_p4.list >& raw_copy.log &
+
+o Create a new page:
+$ curl -k -H 'Accept: text/plain' -X PUT 'https://procstatupdater:2aT0n8Ra@nd280web.nd280.org/t2k/processing/status/production006/A/rdp/ND280/00008000_00008999'
+
+o Posting the list of runs to Processing Status DB (only those will be monitored from web), DB itself though will be filled
+  for every run processed regardless:
+$ curl --data-binary @run9xxx_cos_runs.list -k -H 'Accept: text/plain' -X POST 'https://procstatupdater:2aT0n8Ra@nd280web.nd280.org/t2k/processing/status/production005/F/fpp/ND280/00009000_00009999?COSMIC'
+
+o making the list of raw file names from run/subrun list:
+$ cat run9xxx_spl_runs.list | awk '{printf "nd280_%08d_%04d.daq.mid.gz\n",$1,$2}' > run9xxx_spl_files.list
+
+o making a list containing every 10th record (to produce 10% list for cosmic triggers processing):
+$ cat run9xxx_spl_runs.list | awk '(n++)%10==0' > run9xxx_cos_runs.list
+
+o starting processing from at t2k@bugaboo:
+$ ./gen_qsub.pl v10r11p23 nd280_rdp_spill_all.pbs SPILL production005/F/fpp/ND280 work/run9xxx_spl_files_p2.list wg-bugaboo
+$ ./gen_qsub.pl v10r11p23 nd280_rdp_cosic_all.pbs COSMIC production005/F/fpp/ND280 work/run9xxx_cos_files_p2.list wg-bugaboo
+$ ./gen_qsub.pl v11r19 nd280_rdp_spill_all.pbs SPILL production006/A/rdp/verify/v11r19/ND280 work/veri23.list wg-bugaboo
+
+o uploading files to t2ksrm and registering them to LFC (I did it from my own account of bugaboo-fs):
+$ voms-proxy-init -voms t2k.org:/t2k.org/Role=production -valid 24:00
+$ ./put_register_files.sh reco production005/F/fpp/ND280/00009000_00009999 work/reco_p1.list > ~/copy_reco_p1.log 2>&1 &
+
+o view memory consumption
+qstat -f -u t2k | fgrep '.vmem' | awk '{print substr($3,0,length($3)-2)}' | sort -n
+
+o get the list of failed runs from processingstatus DB (node_id should correspond to the page in question, 
+  e.g. "production006/C/fpp/ND280/00011000_00011999"):
+$ mysql -h nd280web.nd280.org -A processingstatus -e 'select run,subrun from jobs where (node_id = 482 AND result_id <> 1);'
+
+DV. Apr, 2013.
+Upd: Aug, 2015.
