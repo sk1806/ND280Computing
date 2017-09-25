@@ -9,6 +9,8 @@ import time
 import pexpect
 import commands
 
+DIRAC=True
+
 #Parser options
 parser = optparse.OptionParser()
 
@@ -76,6 +78,8 @@ regexp    = options.regexp
 if not filename or not nd280ver or (prod and not dtype) or not jobtype or (jobtype != 'FlatTree' and not evtype) or (jobtype != 'MiniTree' and not evtype):
     parser.print_help()
     sys.exit(1)
+# require filename or exit (list of files to process)
+# require nd280 version, or exit
 
 
 prescale=1
@@ -112,6 +116,12 @@ if nsub:
 tempconf += '.conf'
 
 submit_command='time -p glite-wms-job-submit '
+
+# XXX soph - create dirac submit command
+submit_command_dirac= 'dirac-wms-job-submit'
+
+# XXX soph - not dealing with proxy delegation with dirac for now
+# come back to this
 if delegation:
     submit_command+='-d '+delegation
 else:
@@ -119,6 +129,10 @@ else:
 
 #submit_command+=' -c '+tempconf+' -o '
 submit_command+=' -c autowms.conf -o '
+
+# XXX soph - dirac, for now ignoring proxy or config options.
+# XXX soph - dirac using '-f' argument for jid, not '-o'
+submit_command_dirac+=' -f '
 
 counter   = 0
 submitted = 0
@@ -175,7 +189,7 @@ for f in filelist:
         flines = fjid.readlines()
         if len(flines) > 1:
             joblink = flines[1]
-            jar=joblink.split('/')                
+            jar=joblink.split('/')
             jobout=jar[-1]
             jout=outdir + username + '_' + jobout
             if os.path.isfile(jout):
@@ -189,8 +203,14 @@ for f in filelist:
 
     if not resource:
         command = submit_command + jidname + ' ' + jdlname
+        command_dirac = submit_command_dirac + jidname + ' ' + jdlname
     else:
         command = submit_command + jidname + ' -r ' + resource + ' ' + jdlname
+        command_dirac = submit_command_dirac + jidname + ' ' + jdlname
+        # XXX soph - for dirac you add the 'Sites' param to the jdl, you dont add resource
+        # come back to this - for now the '-r' does nothing
+    if DIRAC;
+        command=command_dirac
     print command
 
     ii=0
