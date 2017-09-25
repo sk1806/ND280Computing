@@ -25,7 +25,7 @@ import signal
 from hashlib import sha1
 from uuid import uuid1
 
-
+DIRAC=True
 ########################
 ## Master dictionary containing se : [ root, fts2Channel, hasSpaceToken ] bindings
 se_master={'srm-t2k.gridpp.rl.ac.uk'   :['srm://srm-t2k.gridpp.rl.ac.uk/castor/ads.rl.ac.uk/prod/t2k.org/nd280/',  'RALLCG2',              True ],                                                   
@@ -2196,39 +2196,40 @@ class ND280JDL:
             jdlfile.write(output_SB_string)
 
             ## Data Requirements for LFC InputData
-            jdlfile.write('DataRequirements = {\n[\nDataCatalogType = "DLI";\nDataCatalog = "'+os.getenv('LFC_HOST')+':8085/";\n')
-            if self.input.alias and not 'cvmfs' in self.input.path:
-                jdlfile.write('InputData = {"' + self.input.alias + '"};\n]\n};\n') ## Should use lcg-lr to determine where data is located.
-            ## generic LFC Data Requirements
-            else:
-                jdlfile.write('InputData = {"lfn:/grid/t2k.org/nd280/cvmfsAccessList"};\n]\n};\n') ## The location of the replicas determine the resource matching
-            jdlfile.write('DataAccessProtocol = {"gsiftp"};\n')
+            ## XXX soph - these options not required for dirac JDL
+            if not DIRAC:
+                jdlfile.write('DataRequirements = {\n[\nDataCatalogType = "DLI";\nDataCatalog = "'+os.getenv('LFC_HOST')+':8085/";\n')
+                if self.input.alias and not 'cvmfs' in self.input.path:
+                    jdlfile.write('InputData = {"' + self.input.alias + '"};\n]\n};\n') ## Should use lcg-lr to determine where data is located.
+                ## generic LFC Data Requirements
+                else:
+                    jdlfile.write('InputData = {"lfn:/grid/t2k.org/nd280/cvmfsAccessList"};\n]\n};\n') ## The location of the replicas determine the resource matching
+                jdlfile.write('DataAccessProtocol = {"gsiftp"};\n')
 
+                ## VO requirements (ND280 software version etc)
+                jdlfile.write('VirtualOrganisation = \"t2k.org\";\n')
 
+                ## under CVMFS s/w tags no longer work
+    #            jdlfile.write('Requirements=Member(\"VO-t2k.org-ND280-' + self.nd280ver + '\",other.GlueHostApplicationSoftwareRunTimeEnvironment)')
 
-            ## VO requirements (ND280 software version etc)
-            jdlfile.write('VirtualOrganisation = \"t2k.org\";\n')
+                ## Resource requirements (CPU time, RAM etc)
+    #            jdlfile.write(' && other.GlueCEPolicyMaxCPUTime > 600')
 
-            ## under CVMFS s/w tags no longer work
-#            jdlfile.write('Requirements=Member(\"VO-t2k.org-ND280-' + self.nd280ver + '\",other.GlueHostApplicationSoftwareRunTimeEnvironment)')
+                jdlfile.write('Requirements = other.GlueCEPolicyMaxCPUTime > 600')
+                jdlfile.write(' && other.GlueHostMainMemoryRAMSize >= '+self.queuelim)
+                #jdlfile.write('Requirements = other.GlueCEPolicyMaxCPUTime > 600 && other.GlueHostMainMemoryRAMSize >= '+self.queuelim)
 
-            ## Resource requirements (CPU time, RAM etc)
-#            jdlfile.write(' && other.GlueCEPolicyMaxCPUTime > 600')
+                ## Add regexp to requirements? (to exclude sites etc)
+                if self.options['regexp']:
+                    jdlfile.write(' && '+self.regexp)
+                jdlfile.write(';\n')
 
-            jdlfile.write('Requirements = other.GlueCEPolicyMaxCPUTime > 600')
-            jdlfile.write(' && other.GlueHostMainMemoryRAMSize >= '+self.queuelim)
-            #jdlfile.write('Requirements = other.GlueCEPolicyMaxCPUTime > 600 && other.GlueHostMainMemoryRAMSize >= '+self.queuelim)
+                ## MyProxy server requirements
+                if os.getenv('MYPROXY_SERVER'):
+                    jdlfile.write('MyProxyServer = \"'+os.getenv('MYPROXY_SERVER')+'\";\n')
+                else:
+                    print 'Warning MyProxyServer attribute undefined!'
 
-            ## Add regexp to requirements? (to exclude sites etc)
-            if self.options['regexp']:
-                jdlfile.write(' && '+self.regexp)
-            jdlfile.write(';\n')
-
-            ## MyProxy server requirements
-            if os.getenv('MYPROXY_SERVER'):
-                jdlfile.write('MyProxyServer = \"'+os.getenv('MYPROXY_SERVER')+'\";\n')
-            else:
-                print 'Warning MyProxyServer attribute undefined!'
 
             ## Finished writing the JDL
             jdlfile.close()
