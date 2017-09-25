@@ -4,4 +4,4 @@ InputSandbox = {"/data/king/t2k/GRID/nd280Computing/tools/ND280Configs.py", "/da
 StdOutput = "ND280MC.out";
 StdError = "ND280MC.err";
 OutputSandbox = {"ND280MC.out", "ND280MC.err", "nu.13a_nom_ND6_250ka_flukain.all.cfg"};
-InputData = {"/t2k.org/temp/cvmfsAccessList"};
+JobName = "prod 99A 99999000 0";
