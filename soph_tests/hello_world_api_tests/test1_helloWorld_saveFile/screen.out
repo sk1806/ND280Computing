@@ -1,0 +1,25 @@
+Submission Result: 
+{'JobID': 5267595,
+ 'OK': True,
+ 'Value': 5267595,
+ 'requireProxyUpload': False,
+ 'rpcStub': (('WorkloadManagement/JobManager',
+              {'delegatedDN': '/C=UK/O=eScience/OU=QueenMaryLondon/L=Physics/CN=sophie king',
+               'delegatedGroup': 't2k.org_user',
+               'keepAliveLapse': 150,
+               'skipCACheck': False,
+               'timeout': 600}),
+             'submitJob',
+             ('[ \n    Origin = DIRAC;\n    Executable = "$DIRACROOT/scripts/dirac-jobexec";\n    OutputSandbox = \n        {\n            Script1_CodeOutput.log,\n            Script2_hostname.log,\n            Script3_test1.sh.log,\n            std.err,\n            std.out\n        };\n    StdError = std.err;\n    LogLevel = info;\n    Site = ANY;\n    CPUTime = 500;\n    JobName = test1;\n    Priority = 1;\n    InputSandbox = \n        {\n            "/bin/hostname",\n            "test1.sh",\n            "SB:GridPPSandboxSE|/SandBox/s/sophie.king.t2k.org_user/4a6/059/4a60591569a872c95b3f72917428b8a5.tar.bz2"\n        };\n    Arguments = "jobDescription.xml -o LogLevel=info";\n    JobGroup = t2k.org;\n    MaxCPUTime = 500;\n    StdOutput = std.out;\n    JobType = User;\n]',))}
+
+The current status of this job is:
+{'OK': True,
+ 'Value': {5267595: {'MinorStatus': 'Pilot Agent Submission',
+                     'Site': 'ANY',
+                     'Status': 'Waiting'}}}
+
+The current status of all jobs is:
+{'OK': True,
+ 'Value': {5267595: {'MinorStatus': 'Pilot Agent Submission',
+                     'Site': 'ANY',
+                     'Status': 'Waiting'}}}
