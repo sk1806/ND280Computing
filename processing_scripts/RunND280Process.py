@@ -209,7 +209,7 @@ for f in filelist:
         command_dirac = submit_command_dirac + jidname + ' ' + jdlname
         # XXX soph - for dirac you add the 'Sites' param to the jdl, you dont add resource
         # come back to this - for now the '-r' does nothing
-    if DIRAC;
+    if DIRAC:
         command=command_dirac
     print command
 
