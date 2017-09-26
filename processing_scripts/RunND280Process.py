@@ -118,7 +118,7 @@ tempconf += '.conf'
 submit_command='time -p glite-wms-job-submit '
 
 # XXX soph - create dirac submit command
-submit_command_dirac= 'dirac-wms-job-submit'
+submit_command_dirac= 'time -p dirac-wms-job-submit'
 
 # XXX soph - not dealing with proxy delegation with dirac for now
 # come back to this
@@ -149,6 +149,8 @@ for f in filelist:
     print f
 
     #Check proxy
+    # XXX soph - will need to change this function to work with dirac
+    # XXX come back to this
     if ND280GRID.CheckVomsProxy() == 1:
         print 'Proxy expired'
         break
