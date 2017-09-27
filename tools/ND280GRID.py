@@ -2261,15 +2261,16 @@ class ND280JDL:
             jdlfile.write(output_SB_string)
 
             ## Data Requirements for LFC InputData
-            jdlfile.write('DataRequirements = {\n[\nDataCatalogType = "DLI";\nDataCatalog = "' + os.getenv(
-                'LFC_HOST') + ':8085/";\n')
-            if self.input.alias and not 'cvmfs' in self.input.path:
-                jdlfile.write(
-                    'InputData = {"' + self.input.alias + '"};\n]\n};\n')  ## Should use lcg-lr to determine where data is located.
+            #jdlfile.write('DataRequirements = {\n[\nDataCatalogType = "DLI";\nDataCatalog = "' + os.getenv(
+            #    'LFC_HOST') + ':8085/";\n')
+            #if self.input.alias and not 'cvmfs' in self.input.path:
+            #    jdlfile.write(
+            #        'InputData = {"' + self.input.alias + '"};\n]\n};\n')  ## Should use lcg-lr to determine where data is located.
             ## generic LFC Data Requirements
-            else:
-                jdlfile.write(
-                    'InputData = {"lfn:/grid/t2k.org/nd280/cvmfsAccessList"};\n]\n};\n')  ## The location of the replicas determine the resource matching
+            #else:
+            #    jdlfile.write(
+            #        'InputData = {"lfn:/grid/t2k.org/nd280/cvmfsAccessList"};\n]\n};\n')  ## The location of the replicas determine the resource matching
+
             jdlfile.write('DataAccessProtocol = {"gsiftp"};\n')
 
             ## VO requirements (ND280 software version etc)
