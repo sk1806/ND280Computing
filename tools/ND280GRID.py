@@ -243,20 +243,22 @@ def GetListOfCEs():
         print 'Could not get list of CEs'
         print '\n'.join(errors)
         return []
-
+\   \
 
 ########################
 ## Check if CE is CREAM enabled
-def IsCREAMed(ce):
-    command = "glite-ce-allowed-submission " + ce
-    p = Popen([command], shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-    lines = p.stdout.readlines()
-    errors = p.stderr.readlines()
-
-    for line in lines:
-        if "this CREAM CE is enabled" in line:
-            return True
-    return False
+#def IsCREAMed(ce):
+#    command = "glite-ce-allowed-submission " + ce # soph - dont think we need this anymore
+#    ## soph - TODO - no dirac equivalent but this function doesnt get used anyway
+#    ## soph - function checks if job submission are allowed to a specific CE (only for CREAM CEs)
+#    p = Popen([command], shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+#    lines = p.stdout.readlines()
+#    errors = p.stderr.readlines()
+#
+#    for line in lines:
+#        if "this CREAM CE is enabled" in line:
+#            return True
+#    return False
 
 
 ########################
@@ -2428,7 +2430,9 @@ class ND280JID:
         self.statusreason = ''
         self.dest = ''
 
-        command = "glite-wms-job-status -i " + self.jidfilename
+        command = "glite-wms-job-status -i " + self.jidfilename # soph - TODO
+        # soph - TODO - dirac has different status output format
+        # soph - TODO - will need to alter what pexpect expects
         child = pexpect.spawn(command)  # ,[], file)
         #### Get the min and max file number
         index = child.expect(['list - \[([0-9]+)\-?([0-9]+)\]?all:', pexpect.EOF, pexpect.TIMEOUT])
