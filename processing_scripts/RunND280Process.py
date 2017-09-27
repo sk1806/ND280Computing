@@ -115,7 +115,7 @@ if nsub:
     tempconf += str(nsub)
 tempconf += '.conf'
 
-submit_command='time -p glite-wms-job-submit '
+submit_command='time -p glite-wms-job-submit '   # soph-glite-done
 
 # XXX soph - create dirac submit command
 submit_command_dirac= 'time -p dirac-wms-job-submit'
@@ -156,6 +156,9 @@ for f in filelist:
         break
 
     #Check validity of input file
+    # XXX soph - this does a check for lfc
+    # XX soph at the moment we feed it LFC LFN
+    # will need to start feeding DFC and then alter ND280FILE
     try:
         if not ND280GRID.ND280File(f):
             print 'Not a valid file, skipping'
