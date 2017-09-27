@@ -237,7 +237,7 @@ def GetListOfCEs():
 ## Check if CE is CREAM enabled
 def IsCREAMed(ce):
 
-    command= "glite-ce-allowed-submission " + ce
+    command= "glite-ce-allowed-submission " + ce   # soph-glite-NOT-done - I dont think we need this function anyway
     p      = Popen([command],shell=True,stdin=PIPE,stdout=PIPE,stderr=PIPE)
     lines  = p.stdout.readlines()
     errors = p.stderr.readlines()
@@ -338,7 +338,8 @@ def GetFTS2ActiveTransferList(channel = ''):
         transfers=[]
         statuses =[]
 
-        command = "glite-transfer-list -s " + os.getenv("FTS_SERVICE")
+        # command = "glite-transfer-list -s " + os.getenv("FTS_SERVICE")  # soph-glite-done  copied trevors
+        command = "fts-transfer-list -s " + os.getenv("FTS_SERVICE")
         if channel: command += ' -c '+channel
 
         lines,errors = runLCG(command)
@@ -384,7 +385,8 @@ def GetActiveTransferList(source='',dest=''):
         transfers=[]
         statuses =[]
 
-        command = 'glite-transfer-list -o t2k.org -s %s --source %s' % (os.getenv("FTS_SERVICE"),source)
+        # command = 'glite-transfer-list -o t2k.org -s %s --source %s' % (os.getenv("FTS_SERVICE"),source)  # soph-glite-done  copied trevors
+        command = 'fts-transfer-list -o t2k.org -s %s --source_se %s' % (os.getenv("FTS_SERVICE"), source)
         if dest: command += ' --dest %s' % (dest)
 
         lines,errors = runLCG(command)
@@ -414,7 +416,8 @@ def GetTransferStatus(transfer='', SOURCE='', DEST=''):
 
     try:
 
-        command = "glite-transfer-status -s " + os.getenv("FTS_SERVICE")+" -l " + transfer
+        #command = "glite-transfer-status -s " + os.getenv("FTS_SERVICE")+" -l " + transfer #soph-glite-done copied off trevorS
+        command = "fts-transfer-status -s " + os.getenv("FTS_SERVICE") + " -l " + transfer
 
         lines,errors = runLCG(command,is_pexpect=False)
 
@@ -644,7 +647,8 @@ def getMyProxyPwd():
 ## Send a single file to the RAL File Transfer Service
 def runFTS(original_filename,copy_filename):
     ## Use the FTS service 23-11-10
-    command = 'glite-transfer-submit -K -o -s ' + os.getenv("FTS_SERVICE")
+    ##command = 'glite-transfer-submit -K -o -s ' + os.getenv("FTS_SERVICE")  # soph-glite-done copied from trevors
+    command = 'fts-transfer-submit -K -o -s ' + os.getenv("FTS_SERVICE")
     ## comment out for legacy mode
     command+=' -m '+os.getenv("MYPROXY_SERVER")
     ##if getMyProxyPwd():
