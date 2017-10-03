@@ -191,7 +191,7 @@ for f in filelist:
             print 'Error: rm -rf ' + jidname + ' failed'
 
     #if not resource:
-        command = submit_command + ' -f ' +jidname + ' ' + jdlname
+    command = submit_command + ' -f ' +jidname + ' ' + jdlname
     #else:
     #   command = submit_command + jidname + ' -r ' + resource + ' ' + jdlname
     # soph - dirac doesnt allow you to specify location on command line - maybe in jdl
