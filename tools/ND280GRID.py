@@ -2245,7 +2245,7 @@ class ND280JDL:
                 raise self.Error(
                     'Could not get the ND280COMPUTINGROOT environment variable, have you executed the setup.sh?')
 
-            input_SB_string = 'InputSandbox = {\"' + comp_path + '/tools/ND280Configs.py\",  \"' + comp_path + '/tools/ND280GRID.py\", \"' + comp_path + '/tools/ND280Job.py\",\"' + comp_path + '/tools/ND280Software.py\",\"' + comp_path + '/tools/pexpect.py\",\"' + comp_path + '/tools/ND280MC_process.py\", \"' + self.executable + '\"'
+            input_SB_string = 'InputSandbox = {\"' + comp_path + '/tools/ND280Configs.py\",  \"' + comp_path + '/tools/ND280GRID.py\", \"' + comp_path + '/tools/ND280Job.py\",\"' + comp_path + '/tools/ND280Software.py\",\"' + comp_path + '/tools/pexpect.py\",\"'+ comp_path  + '/processing_scripts/' + self.executable + '\"'
 
             if self.cfgfile:
                 input_SB_string += ', \"' + self.cfgfile + '\"'
