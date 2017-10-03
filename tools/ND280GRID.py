@@ -416,7 +416,7 @@ def GetActiveTransferList(source='', dest=''):
                     statuses.append(rmNL(line.split(' ')[1]))
                 index += 1
 
-                # parse the lines.  Much more annoying that with glite-transfer-list
+                # parse the lines.  Much more annoying that with glite-transfer-list   # soph-glite-removed
                 # format ['Request ID: 2fe4b204-6645-11e7-aaac-001dd8b71ccb', 'Status: ACTIVE', '', 'Request ID: 702331c4-6645-11e7-bf66-001dd8b71cf7', 'Status: SUBMITTED', '' ...]
 
         return transfers, statuses
@@ -865,7 +865,7 @@ def runFTSMulti(srm, original_filename, copy_filename, isLastFile=False, ftsInt=
                 transfer_id = lines[0]
                 priority = str(5)
                 #                if 'kek.jp' in srm_a:
-                #                    command = 'glite-transfer-setpriority -s ' + os.getenv("FTS_SERVICE") + transfer_id + ' ' + priority
+                #                    command = 'glite-transfer-setpriority -s ' + os.getenv("FTS_SERVICE") + transfer_id + ' ' + priority # soph-glite-removed
                 #                    lines,errors = runLCG(command)
 
             ## Write the transfer log - just FTS ID
