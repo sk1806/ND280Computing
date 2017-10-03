@@ -85,7 +85,7 @@ print(' ')
 
 #j2 = ND280JID('glite_jid_list_2.jid')
 
-print('Testing Jons thing on a list of 1 JID ')
+print('Testing how Jon uses pexpect to return 1 if there is only one JID in file, and 0 if more than one JID in the file ')
 
 command1 = "glite-wms-job-status -i glite_jid_list_1.jid"
 child1 = pexpect.spawn(command1)
