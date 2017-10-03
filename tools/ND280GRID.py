@@ -243,7 +243,7 @@ def GetListOfCEs():
         print 'Could not get list of CEs'
         print '\n'.join(errors)
         return []
-\   \
+
 
 ########################
 ## Check if CE is CREAM enabled
@@ -2422,52 +2422,98 @@ class ND280JID:
     def __init__(self, jidfile, jobno=''):
         """ Initialise the JDL object """
         self.jidfilename = jidfile
-        self.jobno = jobno
+        self.jobno = jobno  # this is the nth job in the file
 
         ## Variables which are to be modified
         self.status = ''
-        self.exitcode = ''
+        self.exitcode = ''  # soph -TODO - dirac doesnt seem to provide exit code - look into this
         self.statusreason = ''
         self.dest = ''
+        self.jobid = '' # soph, adding the JodID
 
-        command = "glite-wms-job-status -i " + self.jidfilename # soph - TODO
-        # soph - TODO - dirac has different status output format
-        # soph - TODO - will need to alter what pexpect expects
-        child = pexpect.spawn(command)  # ,[], file)
+        # soph - dirac has different status output format so need to modify all this
+        # soph - dirac doest not ask you to pick a job if there are multiple, no need to interact, no need for pexpect
+        # soph - can just use match instead
+
+        #command = "glite-wms-job-status -i " + self.jidfilename # soph-glite-removed
+        #child = pexpect.spawn(command)  # ,[], file)
         #### Get the min and max file number
-        index = child.expect(['list - \[([0-9]+)\-?([0-9]+)\]?all:', pexpect.EOF, pexpect.TIMEOUT])
-        if index == 1:  ## Just one file
-            child = pexpect.spawn(command)
-            self.jobno = 1
-        elif index == 0:
-            min, max = child.match.groups()
-            ## If no job number specified then just go for the most recent
-            if not self.jobno:
-                self.jobno = max
-            ## Check the requested jobno and if greater than max just choose the max
-            if int(self.jobno) <= int(max):
-                child.sendline(self.jobno)
-            else:
-                print "There are just ", max, " ids in this file so cannot choose ", self.jobno, " going with ", max
-                child.sendline(max)
+        #index = child.expect(['list - \[([0-9]+)\-?([0-9]+)\]?all:', pexpect.EOF, pexpect.TIMEOUT])
 
-        #### Get the current status
-        child.expect("Current Status: \s+([a-zA-Z0-9_]+)")
-        self.status = child.match.groups()[0]
 
-        if "Done" in self.status:
-            ## print "Status: ", self.status
-            child.expect("Exit code: \s+([0-9]+)")
-            self.exitcode = child.match.groups()[0]
+        #if index == 1:  ## Just one file
+        #    child = pexpect.spawn(command)
+        #    self.jobno = 1
+        #elif index == 0:
+        #    min, max = child.match.groups()
+        #    ## If no job number specified then just go for the most recent
+        #    if not self.jobno:
+        #        self.jobno = max
+        #    ## Check the requested jobno and if greater than max just choose the max
+        #    if int(self.jobno) <= int(max):
+        #        child.sendline(self.jobno)
+        #    else:
+        #        print "There are just ", max, " ids in this file so cannot choose ", self.jobno, " going with ", max
+        #        child.sendline(max)
+        #
+        ##### Get the current status
+        #child.expect("Current Status: \s+([a-zA-Z0-9_]+)")
+        #self.status = child.match.groups()[0]
+        #
+        #if 'Done' in self.status or 'Running' in self.status or 'Scheduled' in self.status:
+        #    child.expect("Destination:   \s+([a-zA-Z0-9_.]+)")
+        #    self.dest = child.match.groups()[0]
+        #    child.expect(pexpect.EOF)
+
+
+        #if "Done" in self.status:
+        #    ## print "Status: ", self.status
+        #    child.expect("Exit code: \s+([0-9]+)")
+        #    self.exitcode = child.match.groups()[0]
 
         ##        child.expect("Status Reason:  \s+(.+?)")
-        child.expect("Status Reason:  \s+([a-zA-Z0-9_]+)")
-        self.statusreason = child.match.groups()[0]
+        #child.expect("Status Reason:  \s+([a-zA-Z0-9_]+)")
+        #self.statusreason = child.match.groups()[0]
 
-        if 'Done' in self.status or 'Running' in self.status or 'Scheduled' in self.status:
-            child.expect("Destination:   \s+([a-zA-Z0-9_.]+)")
-            self.dest = child.match.groups()[0]
-            child.expect(pexpect.EOF)
+
+        out = subprocess.check_output(['dirac-wms-job-status', '-f', self.jidfilename],
+                                      stderr=subprocess.STDOUT).splitlines()
+        nJobs = len(out)
+        if nJobs == 1:  ## Just one file
+            stat = out[0]
+            self.jobno = 1
+        elif nJobs > 1:
+            ## If no job number specified then just go for the most recent
+            if not self.jobno:
+                self.jobno = nJobs
+            ## Check the requested jobno and if greater than max just choose the max
+            if int(self.jobno) > int(nJobs):
+                print "There are just ", max, " ids in this file so cannot choose ", self.jobno, " going with ", max
+                self.jobno = nJobs
+
+        jobStatus = out[self.jobno-1]
+        # e.g. of job status using dirac
+        # "JobID=5344779 Status=Done; MinorStatus=Execution Complete; Site=LCG.UKI-NORTHGRID-MAN-HEP.uk;"
+        matchObj = re.match(r'.*JobID=(.*?) Status=(.*?); MinorStatus=(.*?); Site=(.*?);', jobStatus, re.M | re.I)
+        if matchObj:
+            print "matchObj.group() : ", matchObj.group()   # soph - todo - come back and delete
+            print "matchObj.group(1) : ", matchObj.group(1) # soph - todo - come back and delete
+            print "matchObj.group(2) : ", matchObj.group(2) # soph - todo - come back and delete
+            print "matchObj.group(3) : ", matchObj.group(3) # soph - todo - come back and delete
+            print "matchObj.group(4) : ", matchObj.group(4) # soph - todo - come back and delete
+
+            self.jobid = matchObj.group(1)
+            self.status = matchObj.group(2)
+            self.statusreason = matchObj.group(3)
+            self.dest = matchObj.group(4)
+        else:
+            print "No match!!  Something wrong with job status!!"
+
+
+        # soph - TODO - dirac doesnt seem to provide an exit code, look into this
+        self.exitcode = '0' # soph - TODO
+
+
 
     def GetStatus(self):
         return self.status
@@ -2483,15 +2529,15 @@ class ND280JID:
 
     def GetRunNo(self):
         """ Get run number from standard format files """
-        return self.jidfilename.split('_')[2]
+        return self.jidfilename.split('_')[3]
 
     def GetSubRunNo(self):
         """ Get run number from standard format files """
-        return self.jidfilename.split('_')[3].split('.')[0]
+        return self.jidfilename.split('_')[4].split('.')[0]
 
     def GetOutput(self):
         """ Get the output sandbox """
-        outdir = self.jidfilename.replace('.jid', '_' + self.jobno)
+        outdir = self.jidfilename.replace('.jid', '_' + str(self.jobno))
         command = 'glite-wms-job-output --dir ' + outdir + ' -i ' + self.jidfilename
         p = Popen([command], shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE)
         lines = p.stdout.readlines()
