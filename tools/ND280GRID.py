@@ -2538,7 +2538,9 @@ class ND280JID:
     def GetOutput(self):
         """ Get the output sandbox """
         outdir = self.jidfilename.replace('.jid', '_' + str(self.jobno))
-        command = 'glite-wms-job-output --dir ' + outdir + ' -i ' + self.jidfilename
+        #command = 'glite-wms-job-output --dir ' + outdir + ' -i ' + self.jidfilename  # soph-glite-removed
+        command = 'dirac-wms-job-get-output -f '  + self.jidfilename + ' --Dir ' + outdir
+
         p = Popen([command], shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE)
         lines = p.stdout.readlines()
         errors = p.stderr.readlines()
