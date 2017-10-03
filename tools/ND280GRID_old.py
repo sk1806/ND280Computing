@@ -2455,11 +2455,11 @@ class ND280JID:
 
     def GetRunNo(self):
         """ Get run number from standard format files """
-        return self.jidfilename.split('_')[2]
+        return self.jidfilename.split('_')[3]
 
     def GetSubRunNo(self):
         """ Get run number from standard format files """
-        return self.jidfilename.split('_')[3].split('.')[0]
+        return self.jidfilename.split('_')[4].split('.')[0]
 
     def GetOutput(self):
         """ Get the output sandbox """
