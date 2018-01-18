@@ -1,8 +1,15 @@
 #!/bin/bash
 
+
+unset ROOTSYS
+unset MYPROXY_SERVER
+export ND280TRANSFERS=/data/king/t2k/GRID/FTs
+
+
 ## source this script to setup python path to look for the nd280Computing tools and the
 ## ND280COMPUTINGROOT env variable.
-export ND280COMPUTINGROOT=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd) ## export this as an env var
+##export ND280COMPUTINGROOT=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd) ## export this as an env var
+export ND280COMPUTINGROOT=/data/king/t2k/GRID/dirac/ND280Computing
 echo '$ND280COMPUTINGROOT='$ND280COMPUTINGROOT
 
 ## Set the CVS path
@@ -21,7 +28,7 @@ export GLOBUS_FTP_CLIENT_GRIDFTP2=true
 export LCG_CATALOLOG_TYPE=lfc
 #export FTS_SERVICE=https://lcgfts3.gridpp.rl.ac.uk:8443/services/FileTransfer
 export FTS_SERVICE=https://lcgfts3.gridpp.rl.ac.uk:8446
-export ND280TRANSFERS=/opt/ppd/t2k/users/stewartt/t2k_logs/transfers
+export ND280TRANSFERS=/data/king/t2k/GRID/FTs
 
 if [ -n "${VAR:-x}" ]; then
     export LCG_GFAL_INFOSYS=lcg-bdii.gridpp.ac.uk:2170
