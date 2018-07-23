@@ -245,21 +245,6 @@ def GetListOfCEs():
         return []
 
 
-########################
-## Check if CE is CREAM enabled
-#def IsCREAMed(ce):
-#    command = "glite-ce-allowed-submission " + ce # soph - dont think we need this anymore
-#    ## soph - TODO - no dirac equivalent but this function doesnt get used anyway
-#    ## soph - function checks if job submission are allowed to a specific CE (only for CREAM CEs)
-#    p = Popen([command], shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-#    lines = p.stdout.readlines()
-#    errors = p.stderr.readlines()
-#
-#    for line in lines:
-#        if "this CREAM CE is enabled" in line:
-#            return True
-#    return False
-
 
 ########################
 ## Print Storage Element Disk Usage
