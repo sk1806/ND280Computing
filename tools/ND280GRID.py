@@ -401,9 +401,6 @@ def GetActiveTransferList(source='', dest=''):
                     statuses.append(rmNL(line.split(' ')[1]))
                 index += 1
 
-                # parse the lines.  Much more annoying that with glite-transfer-list   # soph-glite-removed
-                # format ['Request ID: 2fe4b204-6645-11e7-aaac-001dd8b71ccb', 'Status: ACTIVE', '', 'Request ID: 702331c4-6645-11e7-bf66-001dd8b71cf7', 'Status: SUBMITTED', '' ...]
-
         return transfers, statuses
 
     except:
@@ -850,7 +847,7 @@ def runFTSMulti(srm, original_filename, copy_filename, isLastFile=False, ftsInt=
                 transfer_id = lines[0]
                 priority = str(5)
                 #                if 'kek.jp' in srm_a:
-                #                    command = 'glite-transfer-setpriority -s ' + os.getenv("FTS_SERVICE") + transfer_id + ' ' + priority # soph-glite-removed
+                #                    command = 'glite-transfer-setpriority -s ' + os.getenv("FTS_SERVICE") + transfer_id + ' ' + priority 
                 #                    lines,errors = runLCG(command)
 
             ## Write the transfer log - just FTS ID
@@ -2412,55 +2409,10 @@ class ND280JID:
 
         ## Variables which are to be modified
         self.status = ''
-        self.exitcode = ''  # soph -TODO - dirac doesnt seem to provide exit code - look into this
+        self.exitcode = ''  # TODO - dirac doesnt seem to provide exit code - look into this
         self.statusreason = ''
         self.dest = ''
-        self.jobid = '' # soph, adding the JodID
-
-        # soph - dirac has different status output format so need to modify all this
-        # soph - dirac doest not ask you to pick a job if there are multiple, no need to interact, no need for pexpect
-        # soph - can just use match instead
-
-        #command = "glite-wms-job-status -i " + self.jidfilename # soph-glite-removed
-        #child = pexpect.spawn(command)  # ,[], file)
-        #### Get the min and max file number
-        #index = child.expect(['list - \[([0-9]+)\-?([0-9]+)\]?all:', pexpect.EOF, pexpect.TIMEOUT])
-
-
-        #if index == 1:  ## Just one file
-        #    child = pexpect.spawn(command)
-        #    self.jobno = 1
-        #elif index == 0:
-        #    min, max = child.match.groups()
-        #    ## If no job number specified then just go for the most recent
-        #    if not self.jobno:
-        #        self.jobno = max
-        #    ## Check the requested jobno and if greater than max just choose the max
-        #    if int(self.jobno) <= int(max):
-        #        child.sendline(self.jobno)
-        #    else:
-        #        print "There are just ", max, " ids in this file so cannot choose ", self.jobno, " going with ", max
-        #        child.sendline(max)
-        #
-        ##### Get the current status
-        #child.expect("Current Status: \s+([a-zA-Z0-9_]+)")
-        #self.status = child.match.groups()[0]
-        #
-        #if 'Done' in self.status or 'Running' in self.status or 'Scheduled' in self.status:
-        #    child.expect("Destination:   \s+([a-zA-Z0-9_.]+)")
-        #    self.dest = child.match.groups()[0]
-        #    child.expect(pexpect.EOF)
-
-
-        #if "Done" in self.status:
-        #    ## print "Status: ", self.status
-        #    child.expect("Exit code: \s+([0-9]+)")
-        #    self.exitcode = child.match.groups()[0]
-
-        ##        child.expect("Status Reason:  \s+(.+?)")
-        #child.expect("Status Reason:  \s+([a-zA-Z0-9_]+)")
-        #self.statusreason = child.match.groups()[0]
-
+        self.jobid = '' 
 
         out = subprocess.check_output(['dirac-wms-job-status', '-f', self.jidfilename],
                                       stderr=subprocess.STDOUT).splitlines()
@@ -2482,11 +2434,6 @@ class ND280JID:
         # "JobID=5344779 Status=Done; MinorStatus=Execution Complete; Site=LCG.UKI-NORTHGRID-MAN-HEP.uk;"
         matchObj = re.match(r'.*JobID=(.*?) Status=(.*?); MinorStatus=(.*?); Site=(.*?);', jobStatus, re.M | re.I)
         if matchObj:
-            print "matchObj.group() : ", matchObj.group()   # soph - todo - come back and delete
-            print "matchObj.group(1) : ", matchObj.group(1) # soph - todo - come back and delete
-            print "matchObj.group(2) : ", matchObj.group(2) # soph - todo - come back and delete
-            print "matchObj.group(3) : ", matchObj.group(3) # soph - todo - come back and delete
-            print "matchObj.group(4) : ", matchObj.group(4) # soph - todo - come back and delete
 
             self.jobid = matchObj.group(1)
             self.status = matchObj.group(2)
@@ -2496,8 +2443,8 @@ class ND280JID:
             print "No match!!  Something wrong with job status!!"
 
 
-        # soph - TODO - dirac doesnt seem to provide an exit code, look into this
-        self.exitcode = '0' # soph - TODO
+        # TODO - dirac doesnt seem to provide an exit code
+        self.exitcode = '0' - TODO
 
 
 
@@ -2524,7 +2471,6 @@ class ND280JID:
     def GetOutput(self):
         """ Get the output sandbox """
         outdir = self.jidfilename.replace('.jid', '_' + str(self.jobno))
-        #command = 'glite-wms-job-output --dir ' + outdir + ' -i ' + self.jidfilename  # soph-glite-removed
         command = 'dirac-wms-job-get-output -f '  + self.jidfilename + ' --Dir ' + outdir
 
         p = Popen([command], shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE)
