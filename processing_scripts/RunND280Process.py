@@ -111,7 +111,7 @@ if nsub:
     tempconf += str(nsub)
 tempconf += '.conf'
 
-# submit_command='time -p glite-wms-job-submit '  # soph-glite-removed
+
 submit_command='time -p dirac-wms-job-submit '
 
 #if delegation:
@@ -190,11 +190,8 @@ for f in filelist:
         if outdel[0] != 0:
             print 'Error: rm -rf ' + jidname + ' failed'
 
-    #if not resource:
     command = submit_command + ' -f ' +jidname + ' ' + jdlname
-    #else:
-    #   command = submit_command + jidname + ' -r ' + resource + ' ' + jdlname
-    # soph - dirac doesnt allow you to specify location on command line - maybe in jdl
+
     print command
 
     ii=0
