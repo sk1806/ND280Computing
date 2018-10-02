@@ -231,9 +231,9 @@ class ND280Job:
         
         for log_file in glob.glob('*.log'):
             f = ND280File(log_file)
-            if not f.Register(curr_export_dir,srm):
-                sys.exit('Log file missing from output')
-            
+            # if not f.Register(curr_export_dir,srm):  # soph-quick-dirty-dfc-fix
+              #   sys.exit('Log file missing from output')  # soph-quick-dirty-dfc-fix
+            f.Register(curr_export_dir,srm) #:  # soph-quick-dirty-dfc-fix            
 
         return 0
 
@@ -250,13 +250,15 @@ class ND280Job:
         curr_export_dir = dir_prot + '/' + copy_dir + '/' + dir_end
         curr_export_dir = curr_export_dir.replace('//','/')
 
-        #Check if a cfg file is already saved
-        command="lfc-ls "+curr_export_dir.replace('lfn:','')
-        lines,errors=runLCG(command)
-        for line in lines:
-            if copy_type in line:
-                print 'Conf file already stored on LFN'
-                return 0
+        # soph-quick-dirty-dfc-fix
+        # remove this whole block and reqrite in dfc at some point
+        ##Check if a cfg file is already saved
+        #command="lfc-ls "+curr_export_dir.replace('lfn:','')
+        #lines,errors=runLCG(command)
+        #for line in lines:
+        #    if copy_type in line:
+        #        print 'Conf file already stored on LFN'   # soph-quick-dirty-dfc-fix
+        #        return 0     # soph-quick-dirty-dfc-fix
 
         #If not, upload a file
         os.chdir(self.base)
@@ -367,8 +369,8 @@ class ND280Job:
         # Check that all the files to upload are present
         filetags = filedict.keys()
         missing = [t for t in dir_list if t not in filetags]
-        if missing:
-            sys.exit('ROOT file(s):'+' '.join(missing)+' missing from output')
+        #if missing:
+            # sys.exit('ROOT file(s):'+' '.join(missing)+' missing from output') #soph-quick-dirty-dfc-fix
 
         #Copy files to GRID           
         for stage,filename in filedict.iteritems():
@@ -395,8 +397,8 @@ class ND280Job:
             copy_ok   = curr_file.Register(curr_export_dir,srm,timeout=1800)
 
             # should remove all output if there is a failure...
-            if not copy_ok:
-                sys.exit("ROOT file "+filename+" failed lcg-cr")
+            #if not copy_ok:
+                # sys.exit("ROOT file "+filename+" failed lcg-cr")  #soph-dfc-quick-dirty-fix
         return 0                
 
 
@@ -653,7 +655,7 @@ class ND280Process(ND280Job):
         ### Get local input file
         sys.stdout.flush()
 
-        self.GetLocalFile()
+        self.GetLocalFile() 
             
         if not self.localfile:
             raise self.Error('Error obtaining file to process.')
@@ -675,7 +677,7 @@ class ND280Process(ND280Job):
                     raise self.Error('The file is processed to stage ' + stage + ' so re-processing cannot re-commence')
 
             ## Locate the vector file
-            if self.LocateVectorFile():
+            if self.LocateVectorFile():   # soph-quick-dirty-dfc-fix    need to edit this so it downloads form DFC
                 raise self.Error('Could not locate input vectors')
      
         self.config_options['inputfile']      = self.localfile

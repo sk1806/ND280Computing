@@ -1782,69 +1782,86 @@ class ND280File:
              srm=the SURL to register, or the SRM on which to register
         """
 
-        ## Local files, lcg-cr
-        if not self.gridfile:
+       # soph-quick-dirty-dfc-fix
 
-            ## Ensure lfn begins with an 'lfn:/' prefix
-            if not lfn.startswith('lfn:'): lfn = 'lfn:' + lfn
+        #os.system("ls -l")
 
-            ## Ensure lfn (here the LFC destination directory) ends with a slash
-            if not lfn.endswith('/'): lfn += '/'
+        print(' soph - lfn= ' + lfn )
+        print(' soph - self.filename = ' + self.filename )
+        print(' soph - self.guid = ' +  self.guid )
+        print(' soph - self.path = ' +  self.path)
 
-            dest_file = DIRSURL(lfn, srm) + '/' + self.filename
+        pre, dlfn = lfn.split("lfn:/grid", 1)
+        print(' soph - dlfn = ' + dlfn)
 
-            ## Remove any errant '//' ignoring the first 10 characters
-            dest_file = dest_file[:10] + dest_file[10:].replace('//', '/')
+        # soph - really quick horrible attempt at quick DFC fix
+        dirac = "dirac-dms-add-file " + dlfn + self.filename + "  " + self.filename + "  UKI-LT2-QMUL2-disk -ddd"
+        print(' soph - dirac command : ' + dirac )
+        os.system(dirac)
 
-            ## If we are here then the file doesn't exist on the desination srm so we copy and register:
-            command = 'lcg-cr -v -v'
-            if se_spacetokens[srm]:
-                command += ' -s T2KORGDISK'
-            command += ' -d ' + dest_file + ' -l ' + lfn + self.filename + ' file:' + self.path + self.filename
-            lines, errors = runLCG(command, in_timeout=timeout)
+        # ## Local files, lcg-cr
+        # if not self.gridfile:
 
-            ## Check for existence of replica:
-            command = 'lcg-ls ' + dest_file
-            lines, errors = runLCG(command)
-            if errors:
-                ## Last ditch, try replicating elsewhere
-                ## Not appropriate to copy data indiscriminately to T2s...
-                ## Only try RAL and QMUL (lots of disk) instead:
-                for try_srm in ['srm-t2k.gridpp.rl.ac.uk', 'se03.esc.qmul.ac.uk']:
+        #     ## Ensure lfn begins with an 'lfn:/' prefix
+        #     if not lfn.startswith('lfn:'): lfn = 'lfn:' + lfn
 
-                    dest_file = DIRSURL(lfn, try_srm) + '/' + self.filename
-                    command = 'lcg-cr'
-                    if se_spacetokens[try_srm]:
-                        command += ' -s T2KORGDISK'
-                    command += ' -d ' + dest_file + ' -l ' + lfn + self.filename + ' file:' + self.path + self.filename
-                    lines, errors = runLCG(command, in_timeout=timeout)
+        #     ## Ensure lfn (here the LFC destination directory) ends with a slash
+        #     if not lfn.endswith('/'): lfn += '/'
 
-                    ## Check for existence of replica:
-                    command = 'lfc-ls -l ' + lfn.replace('lfn:', '') + self.filename
-                    lines, errors = runLCG(command)
-                    if not errors:
-                        return lfn + self.filename
+        #     dest_file = DIRSURL(lfn, srm) + '/' + self.filename
 
-                raise self.Error('Error copying local file to the GRID\n', errors)
-            else:
-                return lfn + self.filename
+        #     ## Remove any errant '//' ignoring the first 10 characters
+        #     dest_file = dest_file[:10] + dest_file[10:].replace('//', '/')
 
-        # this is a grid file
-        else:
-            if 'srm:/' in srm:
-                dest_file = srm
-            else:
-                dest_file, on_srm = self.SURL(srm)
+        #     ## If we are here then the file doesn't exist on the desination srm so we copy and register:
+        #     command = 'lcg-cr -v -v'
+        #     if se_spacetokens[srm]:
+        #         command += ' -s T2KORGDISK'
+        #     command += ' -d ' + dest_file + ' -l ' + lfn + self.filename + ' file:' + self.path + self.filename
+        #     lines, errors = runLCG(command, in_timeout=timeout)
 
-            command = 'lcg-rf --vo t2k.org -g ' + self.guid + ' ' + dest_file
-            lines, errors = runLCG(command)
+        #     ## Check for existence of replica:
+        #     command = 'lcg-ls ' + dest_file
+        #     lines, errors = runLCG(command)
+        #     if errors:
+        #         ## Last ditch, try replicating elsewhere
+        #         ## Not appropriate to copy data indiscriminately to T2s...
+        #         ## Only try RAL and QMUL (lots of disk) instead:
+        #         for try_srm in ['srm-t2k.gridpp.rl.ac.uk', 'se03.esc.qmul.ac.uk']:
 
-            if errors:
-                print '\n'.join(errors)
-                raise self.Error('Unable to register ' + self.filename)
-            else:
-                print "\n".join(lines)
-                return self.filename
+        #             dest_file = DIRSURL(lfn, try_srm) + '/' + self.filename
+        #             command = 'lcg-cr'
+        #             if se_spacetokens[try_srm]:
+        #                 command += ' -s T2KORGDISK'
+        #             command += ' -d ' + dest_file + ' -l ' + lfn + self.filename + ' file:' + self.path + self.filename
+        #             lines, errors = runLCG(command, in_timeout=timeout)
+
+        #             ## Check for existence of replica:
+        #             command = 'lfc-ls -l ' + lfn.replace('lfn:', '') + self.filename
+        #             lines, errors = runLCG(command)
+        #             if not errors:
+        #                 return lfn + self.filename
+
+        #         raise self.Error('Error copying local file to the GRID\n', errors)
+        #     else:
+        #         return lfn + self.filename
+
+        # # this is a grid file
+        # else:
+        #     if 'srm:/' in srm:
+        #         dest_file = srm
+        #     else:
+        #         dest_file, on_srm = self.SURL(srm)
+
+        #     command = 'lcg-rf --vo t2k.org -g ' + self.guid + ' ' + dest_file
+        #     lines, errors = runLCG(command)
+
+        #     if errors:
+        #         print '\n'.join(errors)
+        #         raise self.Error('Unable to register ' + self.filename)
+        #     else:
+        #         print "\n".join(lines)
+        #         return self.filename
 
 
 #############################################################################################################
