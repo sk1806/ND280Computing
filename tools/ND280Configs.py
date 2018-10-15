@@ -399,22 +399,24 @@ class ND280Config:
 
             ### Geometry
             configfile.write("[geometry]\n")
-            configfile.write("baseline = "       + self.options['baseline']       + "\n")
-            configfile.write("p0d_water_fill = " + self.options['p0d_water_fill'] + "\n\n")
+            configfile.write("magnet_ecal_production6 = "+              "1"                + "\n")  # For P6 with NG4C
+            configfile.write("baseline = "               + self.options['baseline']       + "\n")
+            configfile.write("p0d_water_fill = "         + self.options['p0d_water_fill'] + "\n\n")
 
             ### nd280mc
             configfile.write('[nd280mc]\n')
-            configfile.write('num_events = '             + self.options['num_events']             + '\n')
-            configfile.write('mc_type = '                + self.options['mc_type']                + '\n')
-            configfile.write('random_seed = '            + self.options['nd280mc_random_seed']    + '\n')
-            configfile.write('nbunches = '               + self.options['nbunches']               + '\n')
-            configfile.write('interactions_per_spill = ' + self.options['interactions_per_spill'] + '\n')
-            configfile.write('pot_per_spill = '          + self.options['pot_per_spill']          + '\n')
-            configfile.write('bunch_duration = '         + self.options['bunch_duration']         + '\n')
-            configfile.write('mc_full_spill = '          + self.options['mc_full_spill']          + '\n')
-            configfile.write('time_offset = '            + self.options['time_offset']            + '\n')
-            configfile.write('count_type = '             + self.options['count_type']             + '\n')
-            configfile.write('mc_position = '            + self.options['mc_position']            + '\n\n')
+            configfile.write('physicslist = '            +              'NeutG4CascadeInterface_QGSP_BERT'     + '\n')   # For P6 with NG4C
+            configfile.write('num_events = '             + self.options['num_events']                          + '\n')
+            configfile.write('mc_type = '                + self.options['mc_type']                             + '\n')
+            configfile.write('random_seed = '            + self.options['nd280mc_random_seed']                 + '\n')
+            configfile.write('nbunches = '               + self.options['nbunches']                            + '\n')
+            configfile.write('interactions_per_spill = ' + self.options['interactions_per_spill']              + '\n')
+            configfile.write('pot_per_spill = '          + self.options['pot_per_spill']                       + '\n')
+            configfile.write('bunch_duration = '         + self.options['bunch_duration']                      + '\n')
+            configfile.write('mc_full_spill = '          + self.options['mc_full_spill']                       + '\n')
+            configfile.write('time_offset = '            + self.options['time_offset']                         + '\n')
+            configfile.write('count_type = '             + self.options['count_type']                          + '\n')
+            configfile.write('mc_position = '            + self.options['mc_position']                         + '\n\n')
 
             ### elecSim
             configfile.write('[electronics]\n')
