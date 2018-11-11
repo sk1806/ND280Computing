@@ -691,12 +691,16 @@ class ND280Process(ND280Job):
         elif 'run2' in self.input.path:
             self.config_options['ecal_periods_to_activate'] = '1-2'
             self.config_options['tpc_periods_to_activate']  = 'runs2-3'
-        elif 'run3' in self.input.path:
+        elif ('run3' in self.input.path  or  'run6' in self.input.path:
             self.config_options['ecal_periods_to_activate'] = '3-4'
             self.config_options['tpc_periods_to_activate']  = 'runs2-3'
-        else:
+        elif ( 'run4' in self.input.path  or  'run5' in self.input.path  :
             self.config_options['ecal_periods_to_activate'] = '3-4'
             self.config_options['tpc_periods_to_activate']  = 'runs2-3-4'
+        else: # (run 7,8,9 ? )
+            self.config_options['ecal_periods_to_activate'] = '3-4'
+            self.config_options['tpc_periods_to_activate']  = 'run7'
+
 
         # 2015-08 geometry and beam configurations
         if '2015-08' in self.input.path:
@@ -1072,7 +1076,8 @@ class ND280Process(ND280Job):
 
         #self.config_options['maxint_file'  ] = self.localfile.replace('.root','evtrate_'+self.config_options['comment']+'.root')
         # TODO - soph - should pass this as an option
-        self.config_options['maxint_file'  ] = '/cvmfs/t2k.egi.eu/NEUT_event_rate/NEUT5.4.0_nu.13a_nom_ND6_m250ka_flukain.allevtrate_magnet201011water.root' # soph-neutMC - anti run5water 5.4.0
+        self.config_options['maxint_file'  ] = '/cvmfs/t2k.egi.eu/NEUT_event_rate/nu.13a_nom_ND6_250ka_flukain.allevtrate_magnet_201011air.root'
+        #self.config_options['maxint_file'  ] = '/cvmfs/t2k.egi.eu/NEUT_event_rate/NEUT5.4.0_nu.13a_nom_ND6_m250ka_flukain.allevtrate_magnet201011water.root' # soph-neutMC - anti run5water 5.4.0
         #self.config_options['maxint_file'  ] = '/cvmfs/t2k.egi.eu/NEUT_event_rate/NEUT5.4.0_nu.13a_nom_ND6_m250ka_flukain.allevtrate_magnet201508water.root'  # soph-neutMC
 
         self.config_options['pot'          ] = POT
