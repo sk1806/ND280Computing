@@ -468,7 +468,7 @@ class ND280Job:
 
         print 'Found vector '+vectorDir+'/'+vectorName
         vector = ND280GRID.ND280File('lfn:'+vectorDir+'/'+vectorName)
-        self.localVector = vector.CopyLocal(self.base,ND280GRID.GetDefaultSE())
+        # self.localVector = vector.CopyLocal(self.base,ND280GRID.GetDefaultSE())  soph
 
         return 0
 
@@ -501,7 +501,7 @@ class ND280Process(ND280Job):
             self.input=ND280File(input)
         else:
             self.input=input
-
+            
         sys.stdout.flush()
         print self.input.filename
         print type(self.input)
@@ -560,11 +560,13 @@ class ND280Process(ND280Job):
         sys.stdout.flush()
 
         if override:
+            print('soph - ND280Job.py - ND280Process - GetLocalFioile - override = ' + override)
             print 'GetLocalFile(%s)' % override
             f = ND280File(override)
             self.localfile = f.CopyLocal(self.base,ND280GRID.GetDefaultSE())
             return
-            
+        
+        print('soph - ND280Job.py - ND280Process - GetLocalFioile - NOT override ' + override )
         ## If exception is raised by getting the turl then do a local copy
         print 'self.input.filename = ', self.input.filename
         print 'self.input.path     = ', self.input.path
@@ -573,9 +575,15 @@ class ND280Process(ND280Job):
         print 'self.input.gridfile = ', self.input.gridfile
 
         if self.input.gridfile:
-            self.localfile = self.input.CopyLocal(self.base,ND280GRID.GetDefaultSE())
+
+            print ('soph ND280Job ND280Process GetLocalFile - is gridfile')
+            # self.localfile = self.input.CopyLocal(self.base,ND280GRID.GetDefaultSE())  #soph-quick-dirty-dfc-fix
+            # using base is giving it local directory, we want the dfc diractory
+            self.localfile = self.input.CopyLocal(self.input.path,ND280GRID.GetDefaultSE())
+
             print 'Local copy to ' + self.localfile
         else:
+            print ('soph ND280Job ND280Process GetLocalFile - is local file')
             self.localfile = self.input.filename
             print self.input.filename + ' is local'
         
@@ -655,8 +663,10 @@ class ND280Process(ND280Job):
         ### Get local input file
         sys.stdout.flush()
 
+        print('soph ND280Job - ND280Process - RunMC - about to call GetLocalFile')
         self.GetLocalFile() 
-            
+        print('soph ND280Job - ND280Process - RunMC - finished calling GetLocalFile')
+                    
         if not self.localfile:
             raise self.Error('Error obtaining file to process.')
 
@@ -691,10 +701,10 @@ class ND280Process(ND280Job):
         elif 'run2' in self.input.path:
             self.config_options['ecal_periods_to_activate'] = '1-2'
             self.config_options['tpc_periods_to_activate']  = 'runs2-3'
-        elif ('run3' in self.input.path  or  'run6' in self.input.path:
+        elif ('run3' in self.input.path  or  'run6' in self.input.path):
             self.config_options['ecal_periods_to_activate'] = '3-4'
             self.config_options['tpc_periods_to_activate']  = 'runs2-3'
-        elif ( 'run4' in self.input.path  or  'run5' in self.input.path  :
+        elif ( 'run4' in self.input.path  or  'run5' in self.input.path):
             self.config_options['ecal_periods_to_activate'] = '3-4'
             self.config_options['tpc_periods_to_activate']  = 'runs2-3-4'
         else: # (run 7,8,9 ? )

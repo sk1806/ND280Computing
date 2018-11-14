@@ -1351,10 +1351,15 @@ class ND280File:
             SetGridEnv()
 
         ## Get rid of any new lines and trailing slashes
+        print('soph - ND280GRID.py - ND280File  1- fn = ' + fn )
         fn = fn.strip().rstrip('/')
+        print('soph - ND280GRID.py - ND280File  2- fn = ' + fn )
         self.filename = fn.split('/')[len(fn.split('/')) - 1]
-        self.path = fn.replace(self.filename, '')
 
+        print('soph - ND280GRID.py - ND280File  1- self.filename = ' + self.filename )
+        self.path = fn.replace(self.filename, '')
+        print('soph - ND280GRID.py - ND280File  2- self.filename = ' + self.filename )
+        
         self.turl = ''  ## transfer url used by some file systems
 
         ## Get the replicas of this file
@@ -1366,22 +1371,31 @@ class ND280File:
         self.is_a_dir = False
         try:
             if 'lfn:' in fn or 'srm:' in fn or 'guid:' in fn:
-                self.reps = getReps(fn)
-                self.alias = getAlias(fn)
-                self.guid = getGUID(fn)
+            
+                
+                print("soph - if 'lfn:' in fn or 'srm:' in fn or 'guid:' in fn: ")
+                #self.reps = getReps(fn)
+                #print('soph - ND280GRID.py - ND280File:  self.reps = ' + self.reps)
+                #self.alias = getAlias(fn)
+                #print('soph - ND280GRID.py - ND280File:  self.alias = ' + self.alias)
+                #self.guid = getGUID(fn)
+                #print('soph - ND280GRID.py - ND280File:  self.guid = ' + self.guid)
+                self.alias = fn
 
                 ## Get the file size from the (formatted) LFC long listing
-                try:
-                    lines, errors = runLCG('lfc-ls -ld ' + self.alias.replace('lfn:', ''))
-                    if lines:
-                        self.size = int(lines[0][27:51])
-                        self.is_a_dir = 'd' in lines[0][0]
-                except:
-                    print "Couldn't establish filesize"
+                #try:
+                #    lines, errors = runLCG('lfc-ls -ld ' + self.alias.replace('lfn:', ''))
+                #    if lines:
+                #        self.size = int(lines[0][27:51])
+                #        self.is_a_dir = 'd' in lines[0][0]
+                #except:
+                #    print "Couldn't establish filesize"
 
                 ## Set up relative paths and filename
                 self.path = self.alias.replace('lfn:/grid/', '').replace(self.filename, '')
                 self.gridfile = 'l'
+                print(' soph - ND280GRID.py - ND280File - seting up grid file')
+                print (' soph - ND280GRID.py - ND280File - self.path= ' + self.path )
 
 
             else:
@@ -1393,7 +1407,9 @@ class ND280File:
                         'This file is not registered on the LFC and does not exist on the local system ' + fn)
                 self.gridfile = ''
         except:
-            raise self.Error('Unable to establish file type of ' + fn)
+            # soph-quick-dirty-dfc-fix    
+            #raise self.Error('Unable to establish file type of ' + fn)
+            print 'soph - Unable to establish file type of - need to fix for DFC'
 
         ## File type, p=processed, r=raw, m=MC, o=other, n=none
         if 'oa_nd_' in self.filename:
@@ -1408,6 +1424,8 @@ class ND280File:
         else:
             self.filetype = 'o'
 
+        print('soph - ND280GRID.py - ND280File  3- self.filename = ' + self.filename )
+        
     def __del__(self):
         """ Clean up after the object. If you have requested a turl then set file status to done. """
         ## If you have a turl set the file state to done.
@@ -1443,6 +1461,7 @@ class ND280File:
         if not self.filetype == 'p' and not self.filetype == 'm':
             raise self.Error('This is not a processed or MC file, cannot get stage of processing.')
         fn_spl = self.filename.split('_')
+        print('soph  ND280File.GetStage   returns   fn_spl[5] = ' + fn_spl[5] )
         return fn_spl[5]
 
     ## Return the Version
@@ -1714,59 +1733,71 @@ class ND280File:
 
     def CopyLocal(self, dir, srm=''):
 
+        print('soph - ND280GRID.py ND280File CopyLocal  srm = ' + srm)
         original_filename = self.GetRepSURL(srm)
+        print('soph - ND280GRID.py ND280File CopyLocal  original_filename =' +  original_filename)
         copy_filename = dir + '/' + self.filename
 
         print 'CopyLocal(%s)' % (copy_filename)
+        print 'soph - ND280GRID.py ND280File CopyLocal  copy_filename = ' + copy_filename
 
-        if os.path.exists(copy_filename):
-            print 'File exists'
-            return copy_filename
+        dirac_command = 'dirac-dms-get-file /' + copy_filename
+        print( 'soph - dirac command = ' + dirac_command )
+        os.system(dirac_command)
 
-        if 'srm-t2k.gridpp.rl.ac.uk' in original_filename:
-            lines, errors = runLCG('lcg-ls -l ' + original_filename)
-            if errors:
-                raise self.Error('Could not determine staging of ' + original_filename)
-            else:
-                if not 'ONLINE' in lines[0].split()[5]:
-                    lines, errors = runLCG('lcg-bringonline ' + original_filename, in_timeout=3600, is_pexpect=False)
-                    if errors:
-                        print '\n'.join(errors)
-                        raise self.Error('lcg-bringonline of ' + original_filename + ' threw an error')
-                    if lines:
-                        if 'lcg-bringonline: Success' in lines[0]:
-                            print lines[0]
-                    else:
-                        lines, errors = runLCG('lcg-ls -l ' + original_filename)
-                        if not 'ONLINE' in lines[0].split()[5]:
-                            raise self.Error('lcg-bringonline of ' + original_filename + ' did not bring file online')
+        ## # soph-quick-dirty-dfc-fix
 
-        command = 'lcg-cp ' + original_filename + ' ' + copy_filename
-        lines, errors = runLCG(command, in_timeout=3600,
-                               is_pexpect=False)  ### timeouts added by hand when not using pexpect
-        if errors:
-            raise self.Error('Could not copy ' + original_filename + ' to the local directory ' + copy_filename + '\n',
-                             errors)
-        print '\n'.join(lines)
+        ## if os.path.exists(copy_filename):
+        ##     print 'File exists'
+        ##     return copy_filename
 
-        ### 6A verification control sample names break nd280Control - rename them
-        ### refer to http://www.hep.lancs.ac.uk/nd280Doc/stable/invariant/nd280Control/fileNaming.html
-        if self.filename.startswith('oa_') and '_ctl-' in self.filename[:15]:
-            # first remove '-' instances from 3rd (ppp) field
-            ppp = self.filename.split('_')[2]
-            newfilename = self.filename.replace(ppp, ppp.replace('-', ''))
-            # now move second run_subrun instance to comment field
-            nnn = '-'.join(self.filename.split('_')[3].split('-')[2:4])
-            newfilename = newfilename.replace('-' + nnn, '')
-            newfilename = newfilename.replace('.root', nnn + '.root')
-            newfilename = dir + '/' + newfilename
+        ## if 'srm-t2k.gridpp.rl.ac.uk' in original_filename:cx
+        ##     lines, errors = runLCG('lcg-ls -l ' + original_filename)
+        ##     if errors:
+        ##         raise self.Error('Could not determine staging of ' + original_filename)
+        ##     else:
+        ##         if not 'ONLINE' in lines[0].split()[5]:
+        ##             lines, errors = runLCG('lcg-bringonline ' + original_filename, in_timeout=3600, is_pexpect=False)
+        ##             if errors:
+        ##                 print '\n'.join(errors)
+        ##                 raise self.Error('lcg-bringonline of ' + original_filename + ' threw an error')
+        ##             if lines:
+        ##                 if 'lcg-bringonline: Success' in lines[0]:
+        ##                     print lines[0]
+        ##             else:
+        ##                 lines, errors = runLCG('lcg-ls -l ' + original_filename)
+        ##                 if not 'ONLINE' in lines[0].split()[5]:
+        ##                     raise self.Error('lcg-bringonline of ' + original_filename + ' did not bring file online')
 
-            print 'renaming ' + copy_filename + ' to ' + newfilename
-            os.rename(copy_filename, newfilename)
-            return newfilename
+        ## command = 'lcg-cp ' + original_filename + ' ' + copy_filename
+        ## lines, errors = runLCG(command, in_timeout=3600,
+        ##                        is_pexpect=False)  ### timeouts added by hand when not using pexpect
+        ## 
+        ## if errors:
+        ##     raise self.Error('Could not copy ' + original_filename + ' to the local directory ' + copy_filename + '\n',
+        ##                      errors)
+        ## print '\n'.join(lines)
 
-        return copy_filename
+        ## ### 6A verification control sample names break nd280Control - rename them
+        ## ### refer to http://www.hep.lancs.ac.uk/nd280Doc/stable/invariant/nd280Control/fileNaming.html
+        ## if self.filename.startswith('oa_') and '_ctl-' in self.filename[:15]:
+        ##     # first remove '-' instances from 3rd (ppp) field
+        ##     ppp = self.filename.split('_')[2]
+        ##     newfilename = self.filename.replace(ppp, ppp.replace('-', ''))
+        ##     # now move second run_subrun instance to comment field
+        ##     nnn = '-'.join(self.filename.split('_')[3].split('-')[2:4])
+        ##     newfilename = newfilename.replace('-' + nnn, '')
+        ##     newfilename = newfilename.replace('.root', nnn + '.root')
+        ##     newfilename = dir + '/' + newfilename
 
+        ##     print 'renaming ' + copy_filename + ' to ' + newfilename
+        ##     os.rename(copy_filename, newfilename)
+        ##     return newfilename
+
+        ## return copy_filename
+        return self.filename
+
+ 
     ########################################################################################################################
     ######################## Methods for gridlocally resident files ########################################################
     ########################################################################################################################
@@ -2207,7 +2238,11 @@ class ND280JDL:
     def __init__(self, nd280ver, input, jobtype, evtype='', options={}):
         """ Initialise the JDL object """
         self.nd280ver = nd280ver
+        print ( ' soph - ND280GRID.py - Class ND280JDL def- input = ' + input )
+        # soph - at this point we have whatever was in the input file
         self.input = ND280File(input)
+        # now 
+        print ( ' soph - ND280GRID.py - Class ND280JDL def- self.input.filename = ' + self.input.filename )
         self.jobtype = jobtype
         self.evtype = evtype
         self.options = options
@@ -2232,6 +2267,8 @@ class ND280JDL:
 
     def CreateJDLFile(self, dir=''):
         """ Generic creation of a JDL file, all specifics are to be written in a setup function E.g. SetupProcessJDLFile """
+        
+        print(' soph -  ND280GRID.p6  CreateJDLFile - arguments = ' + self.arguments )
 
         try:
             if not '.jdl' in self.jdlname:
@@ -2317,6 +2354,9 @@ class ND280JDL:
     def SetupProcessJDLFile(self):
         """ Create a Raw data or MC processing jdl file. The one and only argument is the event type to process: spill or cosmic trigger. """
 
+        print ( ' soph - ND280GRID.py - SetupProcessJDLFile - self.input.filename = ' + self.input.filename )
+        print ( ' soph - ND280GRID.py - SetupProcessJDLFile - self.input.gridfile = ' + self.input.gridfile )
+        
         # Define the JDL file name... there are quite a few steps
         self.jdlname = 'ND280' + self.jobtype
         # Don't add trigger to JDL for non runND280 jobs
@@ -2394,7 +2434,12 @@ class ND280JDL:
         self.inputsandbox = []
 
         ## If input is a local file, add it to InputSandbox and set the correct input path
+        
+        print ( ' soph - ND280GRID.py - SetupProcessJDLFile - self.input.filename = ' + self.input.filename )
+        print ( ' soph - ND280GRID.py - SetupProcessJDLFile - self.input.alias = ' + self.input.alias )
+        
         if not self.input.gridfile:
+            print( ' soph - ND280GRID.py - SetupProcessJDLFile -if not self.input.gridfile ')
             localpath = self.input.path + self.input.filename
             if 'cvmfs' in self.input.path:
                 self.input.alias = localpath
@@ -2404,7 +2449,10 @@ class ND280JDL:
                 self.inputsandbox.append(localpath)
                 self.arguments += ' -i ' + self.input.filename
         else:
+            print( ' soph - ND280GRID.py - SetupProcessJDLFile -if not self.input.gridfile -> else')
             self.arguments += ' -i ' + self.input.alias
+            
+        print( ' soph - ND280GRID.py - SetupProcessJDLFile - self.arguments = ' + self.arguments )
 
         # Define paths to stdout and stderr
         self.stdoutput = 'ND280' + self.jobtype + '.out'
